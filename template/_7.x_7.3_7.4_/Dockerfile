@@ -52,10 +52,12 @@ RUN rm -rf /root/.cache/pip/*
 # Install the Arches application
 # FIXME: ADD from github repository instead?
 COPY $ARCHES_PATH ${ARCHES_ROOT}
+RUN chmod +x ${ARCHES_ROOT}/arches/install/arches-project
 
 # From here, run commands from ARCHES_ROOT
 WORKDIR ${ARCHES_ROOT}
 
+RUN pip install --upgrade pip setuptools wheel
 RUN pip install -e . --user --no-use-pep517 && pip install -r arches/install/requirements_dev.txt
 
 COPY $DOCKER_PATH/entrypoint.sh /entrypoint.sh

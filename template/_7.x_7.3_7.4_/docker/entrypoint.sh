@@ -24,7 +24,7 @@ wait_for_db() {
 	do
         psql --host=${PGHOST} --port=${PGPORT} --user=${PGUSERNAME} --dbname=postgres -c "select 1" >&/dev/null
 		return_code=$?
-		sleep 1
+		sleep 3
 	done
 	echo "Database server is up"
 
@@ -33,7 +33,7 @@ wait_for_db() {
     do
         curl -s "http://${ESHOST}:${ESPORT}/_cluster/health?wait_for_status=green&timeout=60s" >&/dev/null
         return_code=$?
-        sleep 1
+        sleep 3
     done
     echo "Elasticsearch is up"
 }
@@ -65,18 +65,20 @@ init_arches() {
 	if [[ ! -d ${APP_FOLDER}/${ARCHES_PROJECT} ]] || [[ ! "$(ls ${APP_FOLDER}/${ARCHES_PROJECT})" ]]; then
 		echo ""
 		echo "----- Custom Arches project '${ARCHES_PROJECT}' does not exist. -----"
-		echo "----- Use the "create_project" command to create the project and then restart the container -----"
+		#echo "----- Use the "create_project" command to create the project and then restart the container -----"
 		echo ""
+		create_arches_project
 	else
 		echo "Custom Arches project '${ARCHES_PROJECT}' exists."
-		wait_for_db
-		if db_exists; then
-			echo "Database ${PGDBNAME} already exists."
-			echo "Skipping Package Loading"
-		else
-			echo "Database ${PGDBNAME} does not exists yet."
-			run_load_package #change to run_load_package if preferred 
-		fi
+	fi
+
+	wait_for_db
+	if db_exists; then
+		echo "Database ${PGDBNAME} already exists."
+		echo "Skipping Package Loading"
+	else
+		echo "Database ${PGDBNAME} does not exists yet."
+		run_load_package #change to run_load_package if preferred 
 	fi
 }
 
@@ -84,7 +86,6 @@ create_arches_project() {
 	echo "Checking if Arches project "${ARCHES_PROJECT}" exists..."
 	if [[ ! -d ${APP_FOLDER}/${ARCHES_PROJECT} ]] || [[ ! "$(ls ${APP_FOLDER}/${ARCHES_PROJECT})" ]]; then
 		echo ""
-		echo "----- Custom Arches project '${ARCHES_PROJECT}' does not exist. -----"
 		echo "----- Creating '${ARCHES_PROJECT}'... -----"
 		echo ""
 

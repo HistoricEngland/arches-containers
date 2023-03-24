@@ -11,11 +11,26 @@ replace_token = "{{project}}"
 def get_target_path(project_name):
     return os.path.join(context,"projects",project_name)
 
-def create_proj_directory(project_name):
+def get_template_folder(version):
+    version = f"_{version}_"
+    root_dir = os.path.join(context,"template")
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        for dirname in dirnames:
+            if version in dirname:
+                return os.path.join(dirpath, dirname)
+    return None
+
+def create_proj_directory(project_name, version):
     target_path = get_target_path(project_name)
+    template_folder = get_template_folder(version)
+    
+    if template_folder is None:
+        raise Exception("ERROR: version not correct or not yet supported.")
+    
     if os.path.exists(target_path):
-        raise Exception(f"Container project path exists: {target_path}")
-    shutil.copytree(os.path.join(context,"template"), target_path)
+        raise Exception(f"ERROR: project path exists: {target_path}")
+    
+    shutil.copytree(template_folder, target_path)
     replace_projectname_placeholder(project_name)
     return target_path
     
@@ -31,26 +46,23 @@ def replace_projectname_placeholder(project_name):
 
 def handle_create_container_project():
     project_name = slugify(text=args.project_name, separator='_')
+    version = args.version.lower()
     print(f"Creating container project {project_name}")
-    print(f"... path: {create_proj_directory(project_name)}")
+    print(f"... path: {create_proj_directory(project_name, version)}")
+    
 
-
-def handle_create_arches_project():
-    print("Create Arches application Project - Not implemented")
-    pass
 
 # supported args
 parser = argparse.ArgumentParser(prog="Arches Container Project Generator",
                                  description="Creates an arches container project that sets up all the required files and default values for running an Arches instance in Docker using docker-compose")
 
 # main requirement is the project name
-parser.add_argument("project_name", help="The name of the project. This value will be slugified to lowercase with underscore seperators")
-
-# should the arches application project be created? If you don't have an arches application project yet then use this flag to create one using the project_name.
-parser.add_argument("-c","--create-arches-project", action='store_true', help="If you don't have an arches application project yet then use this flag to create one using the project_name. This will be created at the root of your workspace.")
+parser.add_argument("-p","--project_name", required=True , help="The name of the project. This value will be slugified to lowercase with underscore seperators")
+parser.add_argument("-v","--version", required=True , help="The arches version the project will be using (major.minor format)")
 args = parser.parse_args()
 
 if __name__ == '__main__':
     #print(args.project_name)
     handle_create_container_project()
-    print(f"{'_'*5} Completed {'_'*5}")
+    
+    
