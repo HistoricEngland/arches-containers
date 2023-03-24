@@ -49,6 +49,8 @@ def handle_create_container_project():
     version = args.version.lower()
     print(f"Creating container project {project_name}")
     print(f"... path: {create_proj_directory(project_name, version)}")
+    print(f"{'-' * 5} Completed {'-' * 5}")
+    
     
 
 
