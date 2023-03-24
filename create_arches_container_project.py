@@ -64,7 +64,6 @@ parser.add_argument("-v","--version", required=True , help="The arches version t
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    #print(args.project_name)
     handle_create_container_project()
     
     
