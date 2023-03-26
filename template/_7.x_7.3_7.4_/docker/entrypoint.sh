@@ -89,9 +89,9 @@ create_arches_project() {
 		echo "----- Creating '${ARCHES_PROJECT}'... -----"
 		echo ""
 
-		cd ${WEB_ROOT}
-		rmdir ${ARCHES_PROJECT}
-		arches-project create ${ARCHES_PROJECT}
+		cd ${APP_FOLDER}
+		python3 ${WEB_ROOT}/arches/arches/install/arches-project create ${ARCHES_PROJECT} -d .
+		copy_settings_local
 		run_setup_db
 
 		exit_code=$?
@@ -119,6 +119,9 @@ copy_settings_local() {
 	# The settings_local.py in ${ARCHES_ROOT}/arches/ gets ignored if running manage.py from a custom Arches project instead of Arches core app
 	echo "Copying ${WEB_ROOT}/docker/settings_docker.py to ${APP_FOLDER}/${ARCHES_PROJECT}/settings_docker.py..."
 	cp ${WEB_ROOT}/docker/settings_docker.py ${APP_FOLDER}/${ARCHES_PROJECT}/settings_docker.py
+	
+	echo "Copying ${WEB_ROOT}/docker/settings_local.py to ${APP_FOLDER}/${ARCHES_PROJECT}/settings_local.py..."
+	yes | cp ${WEB_ROOT}/docker/settings_local.py ${APP_FOLDER}/${ARCHES_PROJECT}/settings_local.py
 }
 
 #### Run commands

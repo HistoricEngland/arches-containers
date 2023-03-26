@@ -43,7 +43,7 @@ DATABASES = {
 }
 
 CELERY_BROKER_URL = "amqp://{}:{}@{}".format(
-    get_env_variable("RABBITMQ_USER"), get_env_variable("RABBITMQ_PASS", get_env_variable("RABBITMQ_HOST"))
+    get_env_variable("RABBITMQ_USER"), get_env_variable("RABBITMQ_PASS"), get_env_variable("RABBITMQ_HOST")
 )  # RabbitMQ --> "amqp://guest:guest@localhost",  Redis --> "redis://localhost:6379/0"
 
 # CANTALOUPE_HTTP_ENDPOINT = "http://{}:{}".format(get_env_variable("CANTALOUPE_HOST"), get_env_variable("CANTALOUPE_PORT"))
