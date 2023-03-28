@@ -117,9 +117,6 @@ install_yarn_components() {
 #### Misc
 copy_settings_local() {
 	# The settings_local.py in ${ARCHES_ROOT}/arches/ gets ignored if running manage.py from a custom Arches project instead of Arches core app
-	echo "Copying ${WEB_ROOT}/docker/settings_docker.py to ${APP_FOLDER}/${ARCHES_PROJECT}/settings_docker.py..."
-	cp ${WEB_ROOT}/docker/settings_docker.py ${APP_FOLDER}/${ARCHES_PROJECT}/settings_docker.py
-	
 	echo "Copying ${WEB_ROOT}/docker/settings_local.py to ${APP_FOLDER}/${ARCHES_PROJECT}/settings_local.py..."
 	yes | cp ${WEB_ROOT}/docker/settings_local.py ${APP_FOLDER}/${ARCHES_PROJECT}/settings_local.py
 }

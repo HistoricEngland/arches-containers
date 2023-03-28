@@ -66,7 +66,6 @@ RUN chmod -R 700 /entrypoint.sh &&\
 
 WORKDIR ${WEB_ROOT}
 RUN mkdir docker
-COPY $DOCKER_PATH/settings_docker.py ${WEB_ROOT}/docker/settings_docker.py
 COPY $DOCKER_PATH/settings_local.py ${WEB_ROOT}/docker/settings_local.py
 COPY $DOCKER_PATH/conf.d ${WEB_ROOT}/docker/conf.d
 COPY $DOCKER_PATH/supervisor.conf ${WEB_ROOT}/docker/supervisor.conf
