@@ -8,7 +8,7 @@ Just create a container project, start the dependencies compose, then start the 
 
 Requires Docker for Desktop or comparible container runtime that supports compose.
 
-Create you virtual environment `python -m venv env` or try using VSCode Dev Container.
+Create your virtual environment `python -m venv env` or try using VSCode Dev Container.
 
 To do the latter, install the Dev Containers extension so that development work can be done within the container and need no local installations. Use a Python base image (3.9 tested) with docker-in-docker feature enabled.
 
