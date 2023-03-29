@@ -29,7 +29,7 @@ Use the create_arches_container_project script to generate all the docker files 
 ```
 > WARNING: Known issues with separators in names so use continuous name for now e.g. mygreatproject.
 
-This will create a directory of files under the "projects" directory with a slug of the project name given under `workspace/arches-continers/projects/mygreatproject`.
+This will create a directory of files under the "projects" directory with a slug of the project name given - an example would be `workspace/arches-continers/projects/mygreatproject`.
 
 
 ### 2. Starting up an arches environment
