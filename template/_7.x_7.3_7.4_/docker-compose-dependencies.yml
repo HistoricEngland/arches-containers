@@ -14,8 +14,8 @@ services:
       container_name: db_{{project}}
       image: postgis/postgis:14-3.2
       volumes:
-        - postgres-data:/var/lib/postgresql/data
-        - postgres-log:/var/log/postgresql
+        - ../../../{{project}}-postgres-data:/var/lib/postgresql/data
+        - ../../../{{project}}-postgres-log:/var/log/postgresql
         - ./docker/init-unix.sql:/docker-entrypoint-initdb.d/init.sql # to set up the DB template
       ports:
         - '5433:5432'
