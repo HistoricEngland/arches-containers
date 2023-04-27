@@ -94,8 +94,5 @@ networks:
     driver: bridge
 
 volumes:
-    postgres-data:
-    postgres-log:
-    elasticsearch-data:
     rabbitmq-logs:
     rabbitmq-data:
