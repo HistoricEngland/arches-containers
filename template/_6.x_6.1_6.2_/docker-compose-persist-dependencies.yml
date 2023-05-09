@@ -23,12 +23,21 @@ services:
         - ./docker/env_file.env
       networks:
         - {{project}}_network
+    
+    elastic-bindmount-init_{{project}}:
+      image: alpine
+      container_name: elastic-bindmount-init_{{project}}
+      restart: "no"
+      entrypoint: |
+        /bin/sh -c "chown 1000:1000 /esBindMount"
+      volumes:
+        - ../../../{{project}}-elasticsearch-data:/esBindMount
 
     elasticsearch_{{project}}:
       container_name: elasticsearch_{{project}}
       image: elasticsearch:7.17.0
       volumes:
-        - ../../../{{project}}_elasticsearch_data:/usr/share/elasticsearch/data
+        - ../../../{{project}}-elasticsearch-data:/usr/share/elasticsearch/data
       ports:
         - "9201:9200"
         - "9301:9300"
