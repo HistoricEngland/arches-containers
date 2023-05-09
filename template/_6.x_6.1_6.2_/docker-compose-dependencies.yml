@@ -14,8 +14,8 @@ services:
       container_name: db_{{project}}
       image: postgis/postgis:12-3.2
       volumes:
-        - ../../../{{project}}-postgres-data:/var/lib/postgresql/data
-        - ../../../{{project}}-postgres-log:/var/log/postgresql
+        - postgres-data:/var/lib/postgresql/data
+        - postgres-log:/var/log/postgresql
         - ./docker/init-unix.sql:/docker-entrypoint-initdb.d/init.sql # to set up the DB template
       ports:
         - '5433:5432'
@@ -28,7 +28,6 @@ services:
       container_name: elasticsearch_{{project}}
       image: elasticsearch:7.17.0
       volumes:
-        #- ../../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
         - elasticsearch-data:/usr/share/elasticsearch/data
       ports:
         - "9201:9200"
@@ -52,7 +51,7 @@ services:
         - {{project}}_network
 
     couchdb_{{project}}:
-      container_name: couchdb_warden
+      container_name: couchdb_{{project}}
       image: couchdb:2.1.1
       ports:
         - "5985:5984"
