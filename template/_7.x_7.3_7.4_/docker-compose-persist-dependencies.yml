@@ -14,8 +14,8 @@ services:
       container_name: db_{{project}}
       image: postgis/postgis:14-3.2
       volumes:
-        - postgres-data:/var/lib/postgresql/data
-        - postgres-log:/var/log/postgresql
+        - ../../../{{project}}-postgres-data:/var/lib/postgresql/data
+        - ../../../{{project}}-postgres-log:/var/log/postgresql
         - ./docker/init-unix.sql:/docker-entrypoint-initdb.d/init.sql # to set up the DB template
       ports:
         - '5433:5432'
@@ -24,12 +24,22 @@ services:
       networks:
         - {{project}}_network
 
+    elastic-bindmount-init_{{project}}:
+      image: alpine
+      container_name: elastic-bindmount-init_{{project}}
+      restart: "no"
+      entrypoint: |
+        /bin/sh -c "chown 1000:1000 /esBindMount"
+      volumes:
+        - ../../../{{project}}-elasticsearch-data:/esBindMount
+
+
     elasticsearch_{{project}}:
       container_name: elasticsearch_{{project}}
       image: elasticsearch:8.5.0
       volumes:
         #- ../../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
-        - elasticsearch-data:/usr/share/elasticsearch/data
+        - ../../../{{project}}-elasticsearch-data:/usr/share/elasticsearch/data
       ports:
         - "9201:9200"
         - "9301:9300"
@@ -37,6 +47,8 @@ services:
         - ./docker/env_file.env
       networks:
         - {{project}}_network
+      depends_on:
+        - elastic-bindmount-init_{{project}}
 
     rabbitmq_{{project}}:
       container_name: rabbitmq_{{project}}
@@ -82,8 +94,5 @@ networks:
     driver: bridge
 
 volumes:
-    postgres-data:
-    postgres-log:
-    elasticsearch-data:
     rabbitmq-logs:
     rabbitmq-data:
