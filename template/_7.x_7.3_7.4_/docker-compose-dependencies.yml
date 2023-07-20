@@ -82,7 +82,7 @@ services:
 
 networks:
   {{project_urlsafe}}-network:
-    name: {{project}}_network
+    name: {{project_urlsafe}}-network
     driver: bridge
 
 volumes:
