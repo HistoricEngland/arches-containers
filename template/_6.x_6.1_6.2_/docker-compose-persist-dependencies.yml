@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-    nginx_{{project}}:
+    nginx-{{project_urlsafe}}:
       container_name: nginx_{{project}}
       image: nginx:latest
       ports:
@@ -8,9 +8,9 @@ services:
       volumes:
         - ./docker/nginx-config/default.conf:/etc/nginx/conf.d/default.conf
       networks:
-        - {{project}}_network
+        - {{project_urlsafe}}-network
 
-    db_{{project}}:
+    db-{{project_urlsafe}}:
       container_name: db_{{project}}
       image: postgis/postgis:12-3.2
       volumes:
@@ -22,9 +22,9 @@ services:
       env_file: 
         - ./docker/env_file.env
       networks:
-        - {{project}}_network
+        - {{project_urlsafe}}-network
     
-    elastic-bindmount-init_{{project}}:
+    elastic-bindmount-init_{{project_urlsafe}}:
       image: alpine
       container_name: elastic-bindmount-init_{{project}}
       restart: "no"
@@ -33,7 +33,7 @@ services:
       volumes:
         - ../../../{{project}}-elasticsearch-data:/esBindMount
 
-    elasticsearch_{{project}}:
+    elasticsearch-{{project_urlsafe}}:
       container_name: elasticsearch_{{project}}
       image: elasticsearch:7.17.0
       volumes:
@@ -44,9 +44,9 @@ services:
       env_file: 
         - ./docker/env_file.env
       networks:
-        - {{project}}_network
+        - {{project_urlsafe}}-network
 
-    rabbitmq_{{project}}:
+    rabbitmq-{{project_urlsafe}}:
       container_name: rabbitmq_{{project}}
       image: rabbitmq:3.8-management
       hostname: my-rabbit
@@ -57,9 +57,9 @@ services:
         - 5673:5672
         - 15673:15672
       networks:
-        - {{project}}_network
+        - {{project_urlsafe}}-network
 
-    couchdb_{{project}}:
+    couchdb-{{project_urlsafe}}:
       container_name: couchdb_{{project}}
       image: couchdb:2.1.1
       ports:
@@ -70,27 +70,27 @@ services:
         - couchdb-data:/usr/local/var/lib/couchdb
         - couchdb-log:/usr/local/var/log/couchdb
       networks:
-        - {{project}}_network
+        - {{project_urlsafe}}-network
 
-    #pg_feat_{{project}}:
+    #pg-feat-{{project_urlsafe}}:
     #  container_name: pg_feat_{{project}}
     #  image: pramsey/pg_featureserv
     #  volumes:
     #    - ../../../pg_featureserv_config_{{project}}:/config
     #  environment:
-    #    - DATABASE_URL=postgresql://arches_spatial_views:arches_spatial_views@db_{{project}}:5432/{{project}}
+    #    - DATABASE_URL=postgresql://arches_spatial_views:arches_spatial_views@db-{{project_urlsafe}}:5432/{{project}}
     #  ports:
     #    - 9000:9000
     #  depends_on:
     #    - db_{{project}}
     
-    #pg_tile_{{project}}:
+    #pg-tile-{{project_urlsafe}}:
     #  container_name: pg_tile_{{project}}
     #  image: pramsey/pg_tileserv
     #  volumes:
     #    - ../../../pg_tileserv_config_{{project}}:/config
     #  environment:
-    #    - DATABASE_URL=postgresql://arches_spatial_views:arches_spatial_views@db_{{project}}:5432/{{project}}
+    #    - DATABASE_URL=postgresql://arches_spatial_views:arches_spatial_views@db-{{project_urlsafe}}:5432/{{project}}
     #  ports:
     #    - 7800:7800
     #  depends_on:
@@ -98,7 +98,7 @@ services:
 
 
 networks:
-  {{project}}_network:
+  {{project_urlsafe}}-network:
     name: {{project}}_network
     driver: bridge
 

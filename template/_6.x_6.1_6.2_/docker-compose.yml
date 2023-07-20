@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-    {{project}}:
+    {{project_urlsafe}}:
       container_name: {{project}}
       image: he/{{project}}:dev_build
       build:
@@ -24,7 +24,7 @@ services:
       stdin_open: true
       tty: true
     
-    {{project}}_livereload:
+    {{project_urlsafe}}-livereload:
       profiles:
         - livereload
       container_name: {{project}}_livereload
@@ -38,7 +38,7 @@ services:
       ports:
         - 35729:35729      
       depends_on:
-          - {{project}}
+          - {{project_urlsafe}}
       stdin_open: true
       tty: true
     
@@ -46,7 +46,7 @@ services:
 networks:
   default:
     external: true
-    name: {{project}}_network
+    name: {{project_urlsafe}}-network
 
 volumes:
     arches-log:

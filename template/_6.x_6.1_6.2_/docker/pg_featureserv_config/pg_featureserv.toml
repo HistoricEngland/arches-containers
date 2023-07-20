@@ -45,7 +45,7 @@ WriteTimeoutSec = 30
 # DATABASE_URL environment variable takes precendence if set.
 # DbConnection = "postgresql://username:password@host/dbname"
 
-DbConnection = "postgresql://arches_spatial_views:arches_spatial_views@localhost:5433/{{project}}"
+DbConnection = "postgresql://arches_spatial_views:arches_spatial_views@localhost:5433/db-{{project_urlsafe}}"
 
 
 # Close pooled connections after this interval
