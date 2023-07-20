@@ -7,6 +7,7 @@ from slugify import slugify
 
 context = os.path.dirname(os.path.abspath(inspect.getframeinfo(inspect.currentframe()).filename))
 replace_token = "{{project}}"
+replace_token_urlsafe = "{{project_urlsafe}}"
 
 def get_target_path(project_name):
     return os.path.join(context,"projects",project_name)
@@ -19,6 +20,9 @@ def get_template_folder(version):
             if version in dirname:
                 return os.path.join(dirpath, dirname)
     return None
+
+def get_urlsafe_project_name(project_name):
+    return slugify(text=project_name, separator='')
 
 def create_proj_directory(project_name, version):
     target_path = get_target_path(project_name)
@@ -41,6 +45,7 @@ def replace_projectname_placeholder(project_name):
             with open(fpath) as f:
                 s = f.read()
             s = s.replace(replace_token, project_name)
+            s = s.replace(replace_token_urlsafe, get_urlsafe_project_name(project_name))
             with open(fpath, "w") as f:
                 f.write(s)
 
