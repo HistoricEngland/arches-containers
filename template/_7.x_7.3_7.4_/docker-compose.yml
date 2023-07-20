@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-    {{project}}:
+    {{project_urlsafe}}:
       container_name: {{project}}
       image: he/{{project}}:dev_build
       build:
@@ -25,7 +25,7 @@ services:
       tty: true
     
     ## - possible 
-    #{{project}}_bash:
+    #{{project_urlsafe}}-bash:
     #  profiles:
     #    - livereload
     #  container_name: {{project}}_bash
@@ -42,11 +42,11 @@ services:
     #  ports:
     #    - 35729:35729      
     #  depends_on:
-    #      - {{project}}
+    #      - {{project_urlsafe}}
     #  stdin_open: true
     #  tty: true
 
-    {{project}}_livereload:
+    {{project_urlsafe}}-livereload:
       profiles:
         - livereload
       container_name: {{project}}_livereload
@@ -60,11 +60,11 @@ services:
       ports:
         - 35729:35729      
       depends_on:
-          - {{project}}
+          - {{project_urlsafe}}
       stdin_open: true
       tty: true
     
-    {{project}}_webpack:
+    {{proproject_urlsafeject}}-webpack:
       container_name: {{project}}_webpack-7-0
       image: he/{{project}}_webpack-7-0
       build:
@@ -81,14 +81,14 @@ services:
       ports:
         - 8028:8021
       depends_on:
-          - {{project}}
+          - {{project_urlsafe}}
       stdin_open: true
       tty: true
 
 networks:
   default:
     external: true
-    name: {{project}}_network
+    name: {{project_urlsafe}}-network
 
 volumes:
     arches-log:
