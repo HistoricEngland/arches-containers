@@ -1,7 +1,7 @@
 version: '3.8'
 services:
     {{project_urlsafe}}:
-      container_name: {{project}}
+      container_name: {{project_urlsafe}}
       image: he/{{project}}:dev_build
       build:
         args:
@@ -27,7 +27,7 @@ services:
     {{project_urlsafe}}-livereload:
       profiles:
         - livereload
-      container_name: {{project}}_livereload
+      container_name: {{project_urlsafe}}_livereload
       image: he/{{project}}:dev_build
       command: run_livereload
       volumes:

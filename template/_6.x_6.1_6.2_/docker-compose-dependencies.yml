@@ -1,7 +1,7 @@
 version: '3.8'
 services:
     nginx-{{project_urlsafe}}:
-      container_name: nginx_{{project}}
+      container_name: nginx-{{project_urlsafe}}
       image: nginx:latest
       ports:
         - "8080:80"
@@ -11,7 +11,7 @@ services:
         - {{project_urlsafe}}-network
 
     db-{{project_urlsafe}}:
-      container_name: db_{{project}}
+      container_name: db-{{project_urlsafe}}
       image: postgis/postgis:12-3.2
       volumes:
         - postgres-data:/var/lib/postgresql/data
@@ -25,7 +25,7 @@ services:
         - {{project_urlsafe}}-network
 
     elasticsearch-{{project_urlsafe}}:
-      container_name: elasticsearch_{{project}}
+      container_name: elasticsearch-{{project_urlsafe}}
       image: elasticsearch:7.17.0
       volumes:
         - elasticsearch-data:/usr/share/elasticsearch/data
@@ -38,7 +38,7 @@ services:
         - {{project_urlsafe}}-network
 
     rabbitmq-{{project_urlsafe}}:
-      container_name: rabbitmq_{{project}}
+      container_name: rabbitmq-{{project_urlsafe}}
       image: rabbitmq:3.8-management
       hostname: my-rabbit
       volumes:
@@ -51,7 +51,7 @@ services:
         - {{project_urlsafe}}-network
 
     couchdb-{{project_urlsafe}}:
-      container_name: couchdb_{{project}}
+      container_name: couchdb-{{project_urlsafe}}
       image: couchdb:2.1.1
       ports:
         - "5985:5984"
@@ -64,7 +64,7 @@ services:
         - {{project_urlsafe}}-network
 
     #pg-feat-{{project_urlsafe}}:
-    #  container_name: pg_feat_{{project}}
+    #  container_name: pg-feat-{{project_urlsafe}}
     #  image: pramsey/pg_featureserv
     #  volumes:
     #    - ../../../pg_featureserv_config_{{project}}:/config
@@ -78,7 +78,7 @@ services:
     #    - {{project_urlsafe}}-network
     
     #pg-tile-{{project_urlsafe}}:
-    #  container_name: pg_tile_{{project}}
+    #  container_name: pg-tile-{{project_urlsafe}}
     #  image: pramsey/pg_tileserv
     #  volumes:
     #    - ../../../pg_tileserv_config_{{project}}:/config

@@ -1,7 +1,7 @@
 version: '3.8'
 services:
     {{project_urlsafe}}:
-      container_name: {{project}}
+      container_name: {{project_urlsafe}}
       image: he/{{project}}:dev_build
       build:
         args:
@@ -28,7 +28,7 @@ services:
     #{{project_urlsafe}}-bash:
     #  profiles:
     #    - livereload
-    #  container_name: {{project}}_bash
+    #  container_name: {{project_urlsafe}}-bash
     #  image: he/{{project}}:dev_build
     #  command: ["bash"]
     #  volumes:
@@ -49,7 +49,7 @@ services:
     {{project_urlsafe}}-livereload:
       profiles:
         - livereload
-      container_name: {{project}}_livereload
+      container_name: {{project_urlsafe}}-livereload
       image: he/{{project}}:dev_build
       command: run_livereload
       volumes:
@@ -64,8 +64,8 @@ services:
       stdin_open: true
       tty: true
     
-    {{proproject_urlsafeject}}-webpack:
-      container_name: {{project}}_webpack-7-0
+    {{project_urlsafe}}-webpack:
+      container_name: {{project_urlsafe}}-webpack
       image: he/{{project}}_webpack-7-0
       build:
         args:
