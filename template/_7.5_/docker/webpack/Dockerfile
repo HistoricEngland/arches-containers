@@ -5,9 +5,9 @@ ARG ARCHES_PATH=./arches
 ARG DOCKER_PATH=./docker
 
 ENV WEB_ROOT=/web_root
-ENV APP_ROOT=${WEB_ROOT}/v75test
+ENV APP_ROOT=${WEB_ROOT}/{{project}}
 ENV ARCHES_ROOT=${WEB_ROOT}/arches
-RUN mkdir -p ${APP_ROOT}/v75test/webpack
+RUN mkdir -p ${APP_ROOT}/{{project}}/webpack
 
 RUN apt-get update && apt-get install -y make software-properties-common
 RUN set -ex \
