@@ -66,18 +66,13 @@ services:
     
     {{project_urlsafe}}-webpack:
       container_name: {{project_urlsafe}}-webpack
-      image: he/{{project}}_webpack-7-0
-      build:
-        args:
-          - "DOCKER_PATH=./arches-containers/projects/{{project}}/docker"
-        context: ../../..
-        dockerfile: ./arches-containers/projects/{{project}}/docker/webpack/Dockerfile
+      image: he/{{project}}:dev_build
       command: run_webpack
       volumes:
         - ../../../arches:/web_root/arches
         - ../../../{{project}}:/web_root/{{project}}
       env_file:
-        - ./docker/webpack/env_file.env
+        - ./docker/env_file.env
       ports:
         - 8028:8021
       depends_on:

@@ -16,6 +16,7 @@ ENV DATA_ROOT=${APP_ROOT}_data
 ENV ARCHES_ROOT=${WEB_ROOT}/arches
 ENV WHEELS=/wheels
 ENV PYTHONUNBUFFERED=1
+ENV NODE_VERSION 16.20.1
 
 RUN apt-get update && apt-get install -y make software-properties-common
 
@@ -52,7 +53,7 @@ RUN set -ex \
 ENV NVM_DIR /usr/local/nvm
 RUN mkdir $NVM_DIR
 
-ENV NODE_VERSION 16.20.1
+
 
 # install nvm
 # https://github.com/nvm-sh/nvm#install-script
@@ -67,6 +68,8 @@ RUN echo "source $NVM_DIR/nvm.sh \
 # add node and npm to path so the commands are available
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+
+RUN npm install -g yarn && apt install wait-for-it
 
 RUN rm -rf /root/.cache/pip/*
 

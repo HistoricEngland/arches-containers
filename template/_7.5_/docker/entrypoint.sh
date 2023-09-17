@@ -187,6 +187,15 @@ run_livereload() {
 	run_livereload_server
 }
 
+run_webpack() {
+	echo ""
+	echo "----- *** RUNNING WEBPACK DEVELOPMENT SERVER *** -----"
+	echo ""
+	cd ${APP_FOLDER}
+    echo "Running Webpack"
+	exec sh -c "wait-for-it {{project_urlsafe}}:${DJANGO_PORT} -t 1200 && cd /web_root/{{project}}/{{project}} && yarn install && yarn start"
+}
+
 ### Starting point ###
 
 # trying not to use virtualenv???
@@ -220,6 +229,9 @@ do
 		;;
 		run_livereload)
 			run_livereload_server
+		;;
+		run_webpack)
+			run_webpack
 		;;
 		setup_arches)
 			start_celery_supervisor
