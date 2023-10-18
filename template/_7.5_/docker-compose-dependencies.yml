@@ -26,7 +26,7 @@ services:
 
     elasticsearch-{{project_urlsafe}}:
       container_name: elasticsearch-{{project_urlsafe}}
-      image: elasticsearch:8.5.0
+      image: docker.elastic.co/elasticsearch/elasticsearch:8.5.0
       volumes:
         #- ../../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
         - elasticsearch-data:/usr/share/elasticsearch/data
