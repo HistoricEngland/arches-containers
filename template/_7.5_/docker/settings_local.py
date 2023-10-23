@@ -69,6 +69,6 @@ if USER_SECRET_KEY:
     SECRET_KEY = USER_SECRET_KEY
 
 #STATIC_ROOT = "/static_root"
-ARCHES_NAMESPACE_FOR_DATA_EXPORT = f"http://{get_env_variable('ARCHES_PROJECT')}:{get_env_variable('DJANGO_PORT')}"
+ARCHES_NAMESPACE_FOR_DATA_EXPORT = f"http://{get_env_variable('PUBLIC_SERVER_PROJECT_NAME')}:{get_env_variable('DJANGO_PORT')}"
 
-PUBLIC_SERVER_ADDRESS = f"http://{get_env_variable('ARCHES_PROJECT')}:{get_env_variable('DJANGO_PORT')}/"
+PUBLIC_SERVER_ADDRESS = f"http://{get_env_variable('PUBLIC_SERVER_PROJECT_NAME')}:{get_env_variable('DJANGO_PORT')}/"
