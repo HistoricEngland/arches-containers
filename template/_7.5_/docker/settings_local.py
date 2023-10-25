@@ -8,6 +8,11 @@ from django.core.exceptions import ImproperlyConfigured
 import ast
 import requests
 import sys
+from os.path import join, dirname
+from dotenv import load_dotenv
+
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 
 def get_env_variable(var_name):

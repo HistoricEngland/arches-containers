@@ -19,6 +19,9 @@ ENV PYTHONUNBUFFERED=1
 ENV NODE_VERSION 16.20.1
 
 RUN apt-get update && apt-get install -y make software-properties-common
+RUN pip install virtualenv
+RUN virtualenv venv 
+RUN /bin/bash -c "source /venv/bin/activate"
 
 # Get the pre-built python wheels from the build environment
 RUN mkdir ${WEB_ROOT}
@@ -83,6 +86,7 @@ WORKDIR ${ARCHES_ROOT}
 
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install -e . --user --no-use-pep517 && pip install -r arches/install/requirements_dev.txt
+RUN pip install python-dotenv 
 
 COPY $DOCKER_PATH/entrypoint.sh /entrypoint.sh
 RUN chmod -R 700 /entrypoint.sh && \
