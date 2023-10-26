@@ -26,7 +26,7 @@ services:
 
     elasticsearch-{{project_urlsafe}}:
       container_name: elasticsearch-{{project_urlsafe}}
-      image: elasticsearch:8.5.0
+      image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
       volumes:
         #- ../../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
         - elasticsearch-data:/usr/share/elasticsearch/data
@@ -40,7 +40,7 @@ services:
 
     rabbitmq-{{project_urlsafe}}:
       container_name: rabbitmq-{{project_urlsafe}}
-      image: rabbitmq:3.8-management
+      image: rabbitmq:3.12.6-management
       hostname: my-rabbit
       volumes:
         - rabbitmq-data:/var/lib/rabbitmq/mnesia/rabbit@my-rabbit
