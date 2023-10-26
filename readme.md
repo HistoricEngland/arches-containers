@@ -8,6 +8,8 @@ Just create a container project, start the dependencies compose, then start the 
 
 Requires Docker for Desktop or comparible container runtime that supports compose.
 
+**❗️ If you are using Apple Silicon devices, ensure that you have enabled Rosetta 2 support in Docker for Desktop advanced settings.**
+
 Create a workspace folder to contain all repos and files.
 
 Create your virtual environment `python -m venv env` or try using VSCode Dev Container.
