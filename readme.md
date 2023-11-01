@@ -18,9 +18,9 @@ To do the latter, install the Dev Containers extension so that development work 
 
 Clone this repo into the workspace folder and then install.
 
+#### if using venv then activate, then in your /path/to/workspace
 ```sh
-# if using venv then activate, then...
-/path/to/workspace $ pip install -r ./arches-containers/requirements.txt 
+pip install -r ./arches-containers/requirements.txt 
 ```
 
 ## Usage
@@ -28,8 +28,9 @@ Clone this repo into the workspace folder and then install.
 ### 1. Create the container project
 Use the create_arches_container_project script to generate all the docker files for an arches project. Call the script and provide the name of the project and the target arches version (major.minor format). v7.0+ supported.
 
+#### in your /path/to/workspace/arches_containers
 ```sh
-/path/to/workspace/arches_containers $ python3 create_arches_container_project.py -p myproject -v 7.4 
+python3 create_arches_container_project.py -p myproject -v 7.4 
 ```
 > WARNING: Known issues with separators in names so use continuous name for now e.g. mygreatproject.
 
@@ -40,10 +41,15 @@ This will create a directory of files under the "projects" directory with a slug
 
 You'll need to clone down the arches repo to the root of your workspace and checkout the branch/tag that you want to use as a basis (should match the version stated when creating the container project).
 
+#### in your /path/to/workspace
 ```sh
-/path/to/workspace $ git clone https://github.com/archesproject/arches.git
-/path/to/workspace $ cd arches
-/path/to/workspace/arches $ git checkout dev/7.4.x
+git clone https://github.com/archesproject/arches.git
+```
+```sh
+cd arches
+```
+```sh
+git checkout dev/7.4.x
 ```
 Navigate you your container project directory.
 
