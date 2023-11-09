@@ -16,6 +16,7 @@ ENV DATA_ROOT=${APP_ROOT}_data
 ENV ARCHES_ROOT=${WEB_ROOT}/arches
 ENV WHEELS=/wheels
 ENV PYTHONUNBUFFERED=1
+ENV NODE_VERSION 14.21.3
 
 RUN apt-get update && apt-get install -y make software-properties-common
 
@@ -30,6 +31,13 @@ RUN mkdir ${DATA_ROOT}
 # with everything enabled, and so, it has a huge amount of dependancies (everything that GDAL
 # support, directly and indirectly pulling in mysql-common, odbc, jp2, perl! ... )
 # a minimised build of GDAL could remove several hundred MB from the container layer.
+RUN apt-get install -y --no-install-recommends curl \
+  && apt-get update -y 
+
+RUN curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+  && sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
+  && apt-get update -y 
+
 RUN set -ex \
   && RUN_DEPS=" \
   build-essential \
@@ -38,14 +46,29 @@ RUN set -ex \
   postgresql-client-14 \
   dos2unix \
   " \
-  && apt-get install -y --no-install-recommends curl \
-  && curl -sL https://deb.nodesource.com/setup_14.x | bash - \
-  && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
-  && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" \
-  && apt-get update -y \
-  && apt-get install -y --no-install-recommends $RUN_DEPS \
-  && apt-get install -y nodejs \
-  && npm install -g yarn
+ && apt-get install -y --no-install-recommends $RUN_DEPS
+
+
+# nvm environment variables
+ENV NVM_DIR /usr/local/nvm
+RUN mkdir $NVM_DIR
+
+# install nvm
+# https://github.com/nvm-sh/nvm#install-script
+RUN curl --silent -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash -
+
+# install node and npm
+RUN echo "source $NVM_DIR/nvm.sh \
+    && nvm install $NODE_VERSION \
+    && nvm alias default $NODE_VERSION \
+    && nvm use default" | bash -
+
+# add node and npm to path so the commands are available
+ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
+ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+
+RUN npm install -g yarn && apt install wait-for-it
+
 
 RUN rm -rf /root/.cache/pip/*
 
