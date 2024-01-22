@@ -1,0 +1,11 @@
+server {
+
+  location / {
+    proxy_pass http://${ARCHES_PROJECT}:${DJANGO_PORT};
+  }
+
+  location /static {
+    # fetch static files from an Azure files share (mounted to /mnt/static-files)
+
+
+}

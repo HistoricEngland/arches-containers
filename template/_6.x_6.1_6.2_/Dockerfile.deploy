@@ -1,0 +1,153 @@
+FROM python:3.9.18
+USER root
+
+# Create a non-root user called arches and add to new arches group
+RUN useradd -U arches
+
+## Build Args ----------------------------------------------------------
+ARG PROJ_NAME=project
+ARG ARCHES_PATH=./arches
+ARG DOCKER_PATH=./docker
+ARG PROJECT_PATH=./${PROJ_NAME}
+
+## Setting default environment variables ---------------------------------
+ENV ARCHES_PROJECT=$PROJ_NAME
+ENV WEB_ROOT=/web_root
+ENV VENV=${WEB_ROOT}/venv
+ENV APP_ROOT=${WEB_ROOT}/${ARCHES_PROJECT}
+ENV STATIC_ROOT=${APP_ROOT}/${ARCHES_PROJECT}/staticfiles
+
+# These are the folders that will be mounted as volumes
+ENV EXPORT_FILES_ROOT=${APP_ROOT}/${ARCHES_PROJECT}/export_deliverables
+ENV UPLOAD_FILES_ROOT=${APP_ROOT}/${ARCHES_PROJECT}/uploadedfiles
+ENV PKG_ROOT=${APP_ROOT}_package
+ENV DATA_ROOT=${APP_ROOT}_data
+
+# Root project folder
+ENV ARCHES_ROOT=${WEB_ROOT}/arches
+ENV WHEELS=/wheels
+ENV PYTHONUNBUFFERED=1
+ENV NODE_VERSION 12.22.12
+
+
+# Install system dependencies -------------------------------------------
+RUN apt-get update && apt-get install -y make software-properties-common
+
+RUN apt-get install -y --no-install-recommends curl \
+  && apt-get update -y 
+
+# register the postgresql package repository
+RUN curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+  && sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
+  && apt-get update -y 
+
+# need to stream line libgdal-dev install to the actual required packages
+RUN set -ex \
+  && RUN_DEPS=" \
+  build-essential \
+  mime-support \
+  libgdal-dev \
+  postgresql-client-12 \
+  dos2unix \
+  supervisor \
+  " \
+ && apt-get install -y --no-install-recommends $RUN_DEPS
+
+
+# INSTALL NODE ---------------------------------------------------------
+
+# nvm environment variables
+ENV NVM_DIR /usr/local/nvm
+RUN mkdir $NVM_DIR
+
+# install nvm
+# https://github.com/nvm-sh/nvm#install-script
+RUN curl --silent -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash -
+
+# install node and npm
+RUN echo "source $NVM_DIR/nvm.sh \
+    && nvm install $NODE_VERSION \
+    && nvm alias default $NODE_VERSION \
+    && nvm use default" | bash -
+
+# add node and npm to path so the commands are available
+ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
+ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+
+# Install yarn
+RUN npm install -g yarn && apt install wait-for-it
+
+# COPY IN ARCHES AND PROJECT CODE ---------------------------------------
+RUN mkdir ${WEB_ROOT}
+COPY $ARCHES_PATH ${ARCHES_ROOT}
+COPY $PROJECT_PATH ${APP_ROOT}
+COPY $DOCKER_PATH/entrypoint.sh ${WEB_ROOT}/entrypoint.sh
+COPY $DOCKER_PATH/settings_local.py ${WEB_ROOT}/docker/settings_local.py
+
+# ensure that that files that need executable permissions have them
+RUN chmod +x ${ARCHES_ROOT}/arches/install/arches-project \
+  && chmod +x ${WEB_ROOT}/entrypoint.sh \
+  && dos2unix ${WEB_ROOT}/entrypoint.sh
+
+# Set ownership of the web root to the arches user
+RUN chown -R arches:arches ${WEB_ROOT} 
+
+# Switch to the "arches" user to ensure all the pip installs are done as the arches user
+USER arches:arches
+RUN mkdir -p ${PKG_ROOT} \
+  && mkdir -p ${DATA_ROOT} \
+  && mkdir -p ${STATIC_ROOT} \
+  && mkdir -p ${EXPORT_FILES_ROOT} \
+  && mkdir -p ${UPLOAD_FILES_ROOT}
+
+
+# From here, run commands from ARCHES_ROOT
+
+# Use VENV to install python dependencies because we are not root
+RUN python3 -m venv ${VENV} \
+  && . ${VENV}/bin/activate
+  
+ENV PATH=${VENV}/bin:$PATH
+ENV PATH=/usr/bin:$PATH
+
+WORKDIR ${ARCHES_ROOT}
+
+RUN pip install --upgrade pip setuptools wheel \
+  && pip install -e . --no-use-pep517 \
+  && pip install django-storages[azure] \
+  && pip install supervisor \
+  && pip install gunicorn \
+  && pip install -r  ${APP_ROOT}/requirements.txt
+
+# Switch to root to setup supervisord and celery ---------------------------------
+USER root
+
+COPY $DOCKER_PATH/conf.d /etc/supervisor/conf.d
+COPY $DOCKER_PATH/arches_supervisord.conf /etc/supervisor/arches_supervisord.conf
+
+RUN chown -R arches:arches /etc/supervisor/conf.d && chmod 777 /etc/supervisor/conf.d \
+  && chown -R arches:arches /etc/supervisor/arches_supervisord.conf && chmod 777 /etc/supervisor/arches_supervisord.conf
+
+RUN mkdir -p /var/log/supervisor && \
+  mkdir -p /var/log/celery
+RUN chown -R arches:arches /var/log/supervisor && chmod 777 /var/log/supervisor \
+  && chown -R arches:arches /var/log/celery && chmod 777 /var/log/celery
+RUN touch /var/run/supervisord.pid && chown arches:arches /var/run/supervisord.pid && chmod 777 /var/run/supervisord.pid
+
+
+
+# Switch back to arches user ready to run the app
+USER arches:arches
+
+# Set default workdir
+WORKDIR ${APP_ROOT}
+
+# Set entrypoint
+ENTRYPOINT ["/web_root/entrypoint.sh"]
+
+# Set default command - use gunicorn for hosted environments
+CMD ["run_arches_gunicorn"]
+#CMD ["run_arches"]
+
+# Expose port 8000
+EXPOSE 8000
