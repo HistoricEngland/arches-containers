@@ -10,6 +10,9 @@ else
 	PACKAGE_JSON_FOLDER=${ARCHES_ROOT}
 fi
 
+# SET DEFAULT WORKING DIRECTORY
+cd ${APP_FOLDER}
+
 YARN_MODULES_FOLDER=${PACKAGE_JSON_FOLDER}/$(awk \
 	-F '--install.modules-folder' '{print $2}' ${PACKAGE_JSON_FOLDER}/.yarnrc \
 	| awk '{print $1}' \
@@ -52,7 +55,22 @@ db_exists() {
 
 	# Return 0 (= true) if database exists
 	if [[ ${count} > 0 ]]; then
-		return 0
+		echo "Checking if database is setup "${PGDBNAME}"..."
+		tcount=`psql --host=${PGHOST} --port=${PGPORT} --user=${PGUSERNAME} --dbname=${PGDBNAME} -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'nodes'"`
+		# Check if returned value is a number and not some error message
+		re='^[0-9]+$'
+		if ! [[ ${tcount} =~ $re ]] ; then
+		echo "Error: Something went wrong when checking if tables exists in database "${PGDBNAME}"..." >&2;
+		echo "Exiting..."
+		exit 1
+		fi
+
+		# Return 0 (= true) if table exists
+		if [[ ${tcount} > 0 ]]; then
+			return 0
+		else
+			return 1
+		fi
 	else
 		return 1
 	fi
@@ -82,15 +100,23 @@ init_arches() {
 	fi
 }
 
+create_arches_project_only(){
+	echo ""
+	echo "----- Creating '${ARCHES_PROJECT}'... -----"
+	echo ""
+
+	cd ${WEB_ROOT}
+	python3 ${WEB_ROOT}/arches/arches/install/arches-project create ${ARCHES_PROJECT}
+	APP_FOLDER=${WEB_ROOT}/${ARCHES_PROJECT}
+}
+
 create_arches_project() {
 	echo "Checking if Arches project "${ARCHES_PROJECT}" exists..."
 	if [[ ! -d ${APP_FOLDER}/${ARCHES_PROJECT} ]] || [[ ! "$(ls ${APP_FOLDER}/${ARCHES_PROJECT})" ]]; then
 		echo ""
 		echo "----- Creating '${ARCHES_PROJECT}'... -----"
 		echo ""
-
-		cd ${APP_FOLDER}
-		python3 ${WEB_ROOT}/arches/arches/install/arches-project create ${ARCHES_PROJECT} -d .
+		create_arches_project_only
 		copy_settings_local
 		run_setup_db
 
@@ -140,8 +166,12 @@ run_setup_db() {
 	echo ""
 	echo "----- RUNNING SETUP_DB -----"
 	echo ""
-	cd ${APP_FOLDER}
-	python3 manage.py setup_db --force
+	if [[ -d ${WEB_ROOT}/${ARCHES_PROJECT}/pkg ]];then
+		python3 manage.py packages -o load_package -s ${ARCHES_PROJECT}/pkg -db -dev -y
+	else
+		cd ${WEB_ROOT}/${ARCHES_PROJECT}
+		python3 manage.py setup_db --force
+	fi
 }
 
 run_load_package() {
@@ -149,7 +179,9 @@ run_load_package() {
 	echo "----- *** LOADING PACKAGE: ${ARCHES_PROJECT} *** -----"
 	echo ""
 	cd ${APP_FOLDER}
-	python3 manage.py packages -o load_package -s ${ARCHES_PROJECT}/pkg -db -dev -y
+	if [[ -d ${ARCHES_PROJECT}/pkg ]];then
+		python3 manage.py packages -o load_package -s ${ARCHES_PROJECT}/pkg -db -dev -y
+	fi
 }
 
 # "exec" means that it will finish building???
@@ -208,6 +240,8 @@ run_webpack() {
 
 # If no arguments are supplied, assume the server needs to be run
 if [[ $#  -eq 0 ]]; then
+	echo "No arguments supplied, running Arches server..."
+	copy_settings_local
 	start_celery_supervisor
 	wait_for_db
 	run_arches
@@ -222,9 +256,9 @@ do
 
 	case ${key} in
 		run_arches)
-			start_celery_supervisor
 			copy_settings_local
 			wait_for_db
+			start_celery_supervisor
 			run_arches
 		;;
 		run_livereload)
@@ -232,12 +266,6 @@ do
 		;;
 		run_webpack)
 			run_webpack
-		;;
-		setup_arches)
-			start_celery_supervisor
-			copy_settings_local
-			wait_for_db
-			setup_arches
 		;;
 		run_tests)
 			copy_settings_local
@@ -249,11 +277,8 @@ do
 			wait_for_db
 			run_migrations
 		;;
-		install_yarn_components)
-			install_yarn_components
-		;;
 		create_project)
-			create_arches_project
+			create_arches_project_only
 		;;
 		help|-h)
 			display_help
