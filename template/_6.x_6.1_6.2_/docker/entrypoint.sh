@@ -96,7 +96,7 @@ init_arches() {
 		echo "Skipping Package Loading"
 	else
 		echo "Database ${PGDBNAME} does not exists yet."
-		run_load_package #change to run_load_package if preferred 
+		run_setup_db #change to run_load_package if preferred 
 	fi
 }
 
