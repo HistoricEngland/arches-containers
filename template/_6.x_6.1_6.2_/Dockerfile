@@ -23,7 +23,6 @@ RUN apt-get update && apt-get install -y make software-properties-common
 
 # Get the pre-built python wheels from the build environment
 RUN mkdir ${WEB_ROOT}
-RUN mkdir ${APP_ROOT}
 RUN mkdir ${PKG_ROOT}
 RUN mkdir ${DATA_ROOT}
 
@@ -98,7 +97,7 @@ RUN mkdir /var/log/supervisor
 RUN mkdir /var/log/celery
 
 # Set default workdir
-WORKDIR ${APP_ROOT}
+WORKDIR ${WEB_ROOT}
 
 # # Set entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
