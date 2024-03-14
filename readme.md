@@ -53,9 +53,9 @@ git checkout dev/7.4.x
 ```
 Navigate you your container project directory.
 
-Compose up the `docker-compose-dependencies.yml` first. Once the dependencies are up, compose up the `docker-compose.yml`.
+If the arches project does not already exist at the root of the workspace then compose up the Compose up the `docker-compose-init.yml` first to generate the project. If you do want to use an existing arches project then ensure the repo has been cloned to the root of workspace first.
 
-If the arches project does not already exist at the root of the workspace then it'll be created. If you do want to use an existing arches project then ensure the repo has been cloned to the root of workspace first.
+Next compose up the `docker-compose-dependencies.yml` to create and start all the service dependencies. Once the dependencies are up, compose up the `docker-compose.yml`.
 
 If you are using this to create a new arches project, this may take a few minutes to complete building everything.
 
