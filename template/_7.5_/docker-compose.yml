@@ -19,8 +19,8 @@ services:
       env_file:
         - ./docker/env_file.env
       ports:
-        - 8002:8000
-        - 5678:5678
+        - {{8002}}:8000
+        - {{5678}}:5678
       stdin_open: true
       tty: true
     
@@ -58,7 +58,7 @@ services:
       env_file:
         - ./docker/env_file.env
       ports:
-        - 35729:35729      
+        - {{35729}}:35729      
       depends_on:
           - {{project_urlsafe}}
       stdin_open: true
@@ -74,7 +74,7 @@ services:
       env_file:
         - ./docker/env_file.env
       ports:
-        - 8028:8021
+        - {{8028}}:8021
       depends_on:
           - {{project_urlsafe}}
       stdin_open: true

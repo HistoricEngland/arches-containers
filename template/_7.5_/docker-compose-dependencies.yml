@@ -4,7 +4,7 @@ services:
       container_name: nginx-{{project_urlsafe}}
       image: nginx:latest
       ports:
-        - "8080:80"
+        - "{{8080}}:80"
       volumes:
         - ./docker/nginx-config/default.conf:/etc/nginx/conf.d/default.conf
       networks:
@@ -14,11 +14,11 @@ services:
       container_name: db-{{project_urlsafe}}
       image: postgis/postgis:14-3.2
       volumes:
-        - postgres-data:/var/lib/postgresql/data
-        - postgres-log:/var/log/postgresql
+        - {{project_urlsafe}}-postgres-data:/var/lib/postgresql/data
+        - {{project_urlsafe}}-postgres-log:/var/log/postgresql
         - ./docker/init-unix.sql:/docker-entrypoint-initdb.d/init.sql # to set up the DB template
       ports:
-        - '5433:5432'
+        - '{{5433}}:5432'
       env_file: 
         - ./docker/env_file.env
       networks:
@@ -29,10 +29,10 @@ services:
       image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
       volumes:
         #- ../../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
-        - elasticsearch-data:/usr/share/elasticsearch/data
+        - {{project_urlsafe}}-elasticsearch-data:/usr/share/elasticsearch/data
       ports:
-        - "9201:9200"
-        - "9301:9300"
+        - "{{9201}}:9200"
+        - "{{9301}}:9300"
       env_file: 
         - ./docker/env_file.env
       networks:
@@ -43,11 +43,11 @@ services:
       image: rabbitmq:3.12.6-management
       hostname: my-rabbit
       volumes:
-        - rabbitmq-data:/var/lib/rabbitmq/mnesia/rabbit@my-rabbit
-        - rabbitmq-logs:/var/log/rabbitmq/log
+        - {{project_urlsafe}}-rabbitmq-data:/var/lib/rabbitmq/mnesia/rabbit@my-rabbit
+        - {{project_urlsafe}}-rabbitmq-logs:/var/log/rabbitmq/log
       ports:
-        - 5673:5672
-        - 15673:15672
+        - {{5673}}:5672
+        - {{15673}}:15672
       networks:
         - {{project_urlsafe}}-network
 
@@ -86,8 +86,8 @@ networks:
     driver: bridge
 
 volumes:
-    postgres-data:
-    postgres-log:
-    elasticsearch-data:
-    rabbitmq-logs:
-    rabbitmq-data:
+    {{project_urlsafe}}-postgres-data:
+    {{project_urlsafe}}-postgres-log:
+    {{project_urlsafe}}-elasticsearch-data:
+    {{project_urlsafe}}-rabbitmq-logs:
+    {{project_urlsafe}}-rabbitmq-data:

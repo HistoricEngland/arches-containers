@@ -1,6 +1,10 @@
 FROM python:3.10.12
 USER root
 
+RUN mkdir -p /usr/local/share/ca-certificates
+COPY Fortinet_CA_SSL.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
 ## Build Args
 ARG PROJ_NAME=project
 ARG ARCHES_PATH=./arches
@@ -60,13 +64,16 @@ RUN curl --silent -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/insta
 
 # install node and npm
 RUN echo "source $NVM_DIR/nvm.sh \
-    && nvm install $NODE_VERSION \
-    && nvm alias default $NODE_VERSION \
-    && nvm use default" | bash -
+  && nvm install $NODE_VERSION \
+  && nvm alias default $NODE_VERSION \
+  && nvm use default" | bash -
 
 # add node and npm to path so the commands are available
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+
+# set npm to use Fortinet certificate
+RUN npm config set cafile /etc/ssl/certs/Fortinet_CA_SSL.pem
 
 RUN npm install -g yarn && apt install wait-for-it
 
@@ -80,8 +87,12 @@ RUN chmod +x ${ARCHES_ROOT}/arches/install/arches-project
 # From here, run commands from ARCHES_ROOT
 WORKDIR ${ARCHES_ROOT}
 
+# configure pip to use Fortinet certificate
+RUN pip config set global.cert /usr/local/share/ca-certificates/Fortinet_CA_SSL.crt
+
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install -e . --user --no-use-pep517 && pip install -r arches/install/requirements_dev.txt
+RUN pip install --user python-docx==1.1.0
 
 COPY $DOCKER_PATH/entrypoint.sh /entrypoint.sh
 RUN chmod -R 700 /entrypoint.sh && \
