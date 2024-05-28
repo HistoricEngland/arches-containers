@@ -16,7 +16,7 @@ ENV DATA_ROOT=${APP_ROOT}_data
 ENV ARCHES_ROOT=${WEB_ROOT}/arches
 ENV WHEELS=/wheels
 ENV PYTHONUNBUFFERED=1
-ENV NODE_VERSION 16.20.1
+ENV NODE_VERSION 20.12.2
 
 RUN apt-get update && apt-get install -y make software-properties-common
 
