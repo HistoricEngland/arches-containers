@@ -13,13 +13,6 @@ fi
 # SET DEFAULT WORKING DIRECTORY
 cd ${APP_FOLDER}
 
-YARN_MODULES_FOLDER=${PACKAGE_JSON_FOLDER}/$(awk \
-	-F '--install.modules-folder' '{print $2}' ${PACKAGE_JSON_FOLDER}/.yarnrc \
-	| awk '{print $1}' \
-	| tr -d $'\r' \
-	| tr -d '"' \
-	| sed -e "s/^\.\///g")
-
 #Utility functions that check db status
 wait_for_db() {
 	echo "Testing if database server is up..."
@@ -132,12 +125,9 @@ create_arches_project() {
 }
 
 # Yarn
-install_yarn_components() {
-	if [[ ! -d ${YARN_MODULES_FOLDER} ]] || [[ ! "$(ls ${YARN_MODULES_FOLDER})" ]]; then
-		echo "Yarn modules do not exist, installing..."
-		cd ${PACKAGE_JSON_FOLDER}
-		yarn install
-	fi
+install_npm_components() {
+	cd ${PACKAGE_JSON_FOLDER}
+	npm install
 }
 
 #### Misc
@@ -210,7 +200,7 @@ activate_virtualenv() {
 #### Main commands
 run_arches() {
 	init_arches
-	install_yarn_components
+	install_npm_components
 	run_django_server
 }
 
@@ -225,7 +215,7 @@ run_webpack() {
 	echo ""
 	cd ${APP_FOLDER}
     echo "Running Webpack"
-	exec sh -c "wait-for-it {{project_urlsafe}}:${DJANGO_PORT} -t 1200 && cd /web_root/{{project}}/{{project}} && yarn install && yarn start"
+	exec sh -c "wait-for-it {{project_urlsafe}}:${DJANGO_PORT} -t 1200 && cd /web_root/{{project}}/{{project}} && npm install && npm start"
 }
 
 ### Starting point ###
