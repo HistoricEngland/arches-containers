@@ -4,3 +4,5 @@
 .ENV
 
 projects/
+
+.DS_Store
