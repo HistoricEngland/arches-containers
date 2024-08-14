@@ -99,7 +99,7 @@ create_arches_project_only(){
 	echo ""
 
 	cd ${WEB_ROOT}
-	python3 ${WEB_ROOT}/arches/arches/install/arches-project create ${ARCHES_PROJECT}
+	python3 ${WEB_ROOT}/arches/arches/install/arches_project.py create ${ARCHES_PROJECT}
 	APP_FOLDER=${WEB_ROOT}/${ARCHES_PROJECT}
 }
 
@@ -215,7 +215,7 @@ run_webpack() {
 	echo ""
 	cd ${APP_FOLDER}
     echo "Running Webpack"
-	exec sh -c "wait-for-it {{project_urlsafe}}:${DJANGO_PORT} -t 1200 && cd /web_root/{{project}}/{{project}} && npm install && npm start"
+	exec sh -c "wait-for-it {{project_urlsafe}}:${DJANGO_PORT} -t 1200 && cd /web_root/{{project}} && npm install && npm start"
 }
 
 ### Starting point ###
