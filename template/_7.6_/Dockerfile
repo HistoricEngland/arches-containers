@@ -16,7 +16,7 @@ ENV DATA_ROOT=${APP_ROOT}_data
 ENV ARCHES_ROOT=${WEB_ROOT}/arches
 ENV WHEELS=/wheels
 ENV PYTHONUNBUFFERED=1
-ENV NODE_VERSION 20.12.2
+ENV NODE_VERSION 20.14.0
 
 RUN apt-get update && apt-get install -y make software-properties-common
 
@@ -75,7 +75,7 @@ RUN rm -rf /root/.cache/pip/*
 # Install the Arches application
 # FIXME: ADD from github repository instead?
 COPY $ARCHES_PATH ${ARCHES_ROOT}
-RUN chmod +x ${ARCHES_ROOT}/arches/install/arches_project.py
+RUN chmod +x ${ARCHES_ROOT}/arches/install/arches_admin.py
 
 # From here, run commands from ARCHES_ROOT
 WORKDIR ${ARCHES_ROOT}
