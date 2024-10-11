@@ -7,7 +7,7 @@ if [[ -z ${ARCHES_PROJECT} ]]; then
 	PACKAGE_JSON_FOLDER=${ARCHES_ROOT}
 else
 	APP_FOLDER=${WEB_ROOT}/${ARCHES_PROJECT}
-	PACKAGE_JSON_FOLDER=${ARCHES_ROOT}
+	PACKAGE_JSON_FOLDER=${APP_FOLDER}
 fi
 
 # SET DEFAULT WORKING DIRECTORY
@@ -99,7 +99,7 @@ create_arches_project_only(){
 	echo ""
 
 	cd ${WEB_ROOT}
-	python3 ${WEB_ROOT}/arches/arches/install/arches_project.py create ${ARCHES_PROJECT}
+	python3 arches-admin startproject ${ARCHES_PROJECT}
 	APP_FOLDER=${WEB_ROOT}/${ARCHES_PROJECT}
 }
 
@@ -219,14 +219,6 @@ run_webpack() {
 }
 
 ### Starting point ###
-
-# trying not to use virtualenv???
-# activate_virtualenv
-
-# Use -gt 1 to consume two arguments per pass in the loop
-# (e.g. each argument has a corresponding value to go with it).
-# Use -gt 0 to consume one or more arguments per pass in the loop
-# (e.g. some arguments don't have a corresponding value to go with it, such as --help ).
 
 # If no arguments are supplied, assume the server needs to be run
 if [[ $#  -eq 0 ]]; then
