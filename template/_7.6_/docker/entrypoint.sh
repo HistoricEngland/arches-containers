@@ -99,7 +99,7 @@ create_arches_project_only(){
 	echo ""
 
 	cd ${WEB_ROOT}
-	python3 arches-admin startproject ${ARCHES_PROJECT}
+	python3 ${WEB_ROOT}/arches/arches/install/arches_admin.py startproject ${ARCHES_PROJECT}
 	APP_FOLDER=${WEB_ROOT}/${ARCHES_PROJECT}
 }
 
