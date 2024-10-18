@@ -1,4 +1,4 @@
-# arches-containers - **under development**
+# arches-containers
 
 Developer tool to easily setup an Arches development environment. It creates container "projects" that provide all the files needed, with essential settings preconfigured.
 
