@@ -10,11 +10,11 @@ replace_token = "{{project}}"
 replace_token_urlsafe = "{{project_urlsafe}}"
 
 def get_target_path(project_name):
-    return os.path.join(context,"projects",project_name)
+    return os.path.join(context, "projects", project_name)
 
 def get_template_folder(version):
     version = f"_{version}_"
-    root_dir = os.path.join(context,"template")
+    root_dir = os.path.join(context, "template")
     for dirpath, dirnames, filenames in os.walk(root_dir):
         for dirname in dirnames:
             if version in dirname:
@@ -22,7 +22,7 @@ def get_template_folder(version):
     return None
 
 def get_urlsafe_project_name(project_name):
-    return slugify(text=project_name, separator='')
+    return slugify(text=project_name, separator="")
 
 def create_proj_directory(project_name, version):
     target_path = get_target_path(project_name)
@@ -50,25 +50,21 @@ def replace_projectname_placeholder(project_name):
                 f.write(s)
 
 def handle_create_container_project():
-    project_name = slugify(text=args.project_name, separator='_')
+    project_name = slugify(text=args.project_name, separator="_")
     version = args.version.lower()
     print(f"Creating container project {project_name}")
     print(f"... path: {create_proj_directory(project_name, version)}")
     print(f"{'-' * 5} Completed {'-' * 5}")
     
-    
-
-
 # supported args
 parser = argparse.ArgumentParser(prog="Arches Container Project Generator",
                                  description="Creates an arches container project that sets up all the required files and default values for running an Arches instance in Docker using docker-compose")
 
 # main requirement is the project name
-parser.add_argument("-p","--project_name", required=True , help="The name of the project. This value will be slugified to lowercase with underscore seperators")
-parser.add_argument("-v","--version", required=True , help="The arches version the project will be using (major.minor format)")
+parser.add_argument("-p", "--project_name", required=True, help="The name of the project. This value will be slugified to lowercase with underscore separators")
+parser.add_argument("-v", "--version", required=True, help="The arches version the project will be using (major.minor format)")
 args = parser.parse_args()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     handle_create_container_project()
-    
-    
+
