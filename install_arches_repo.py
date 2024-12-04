@@ -1,10 +1,15 @@
+import inspect
 import json
 import os
 import subprocess
 import argparse
 
+
+context = os.path.dirname(os.path.abspath(inspect.getframeinfo(inspect.currentframe()).filename))
+
 def get_project_version(project_name):
-    config_path = f"project/{project_name}/config.json"
+    config_path = f"{context}/projects/{project_name}/config.json"
+    print(config_path)
     if not os.path.exists(config_path):
         print("Version not found. Only projects for version 8.0 and above support this command.")
         exit(1)
@@ -14,13 +19,13 @@ def get_project_version(project_name):
 
 def clone_and_checkout_repo(version, organization):
     repo_url = f"https://github.com/{organization}/arches.git"
-    clone_dir = "arches"
+    clone_dir = f"{context}/arches"
     
     if not os.path.exists(clone_dir):
         subprocess.run(["git", "clone", repo_url, clone_dir])
     
     os.chdir(clone_dir)
-    subprocess.run(["git", "checkout", version])
+    subprocess.run(["git", "checkout", f"dev/{version}.x"])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Clone and checkout the correct development branch of the arches repo.")
