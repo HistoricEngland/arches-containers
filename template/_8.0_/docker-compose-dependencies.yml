@@ -40,7 +40,7 @@ services:
 
     rabbitmq-{{project_urlsafe}}:
       container_name: rabbitmq-{{project_urlsafe}}
-      image: rabbitmq:3.12.6-management
+      image: rabbitmq:3.13.7-management
       hostname: my-rabbit
       volumes:
         - rabbitmq-data:/var/lib/rabbitmq/mnesia/rabbit@my-rabbit
