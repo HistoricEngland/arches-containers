@@ -28,7 +28,7 @@ services:
       container_name: elasticsearch-{{project_urlsafe}}
       image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
       volumes:
-        #- ../../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
+        #- ../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
         - elasticsearch-data:/usr/share/elasticsearch/data
       ports:
         - "9201:9200"
@@ -55,7 +55,7 @@ services:
     #  container_name: pg-feat-{{project_urlsafe}}
     #  image: pramsey/pg_featureserv
     #  volumes:
-    #    - ../../../pg_featureserv_config_{{project}}:/config
+    #    - ../../pg_featureserv_config_{{project}}:/config
     #  environment:
     #    - DATABASE_URL=postgresql://arches_spatial_views:arches_spatial_views@db-{{project_urlsafe}}:5432/{{project}}
     #  ports:
@@ -69,7 +69,7 @@ services:
     #  container_name: pg-tile-{{project_urlsafe}}
     #  image: pramsey/pg_tileserv
     #  volumes:
-    #    - ../../../pg_tileserv_config_{{project}}:/config
+    #    - ../../pg_tileserv_config_{{project}}:/config
     #  environment:
     #    - DATABASE_URL=postgresql://arches_spatial_views:arches_spatial_views@db-{{project_urlsafe}}:5432/{{project}}
     #  ports:

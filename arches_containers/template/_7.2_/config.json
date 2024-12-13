@@ -1,0 +1,6 @@
+{
+    "project_name": "{{project}}",
+    "project_name_url_safe": "{{project_urlsafe}}",
+    "arches_version": "7.2",
+    "organization_name": "archesproject"
+}

@@ -14,8 +14,8 @@ services:
       container_name: db-{{project_urlsafe}}
       image: postgis/postgis:14-3.2
       volumes:
-        - ../../../{{project}}-postgres-data:/var/lib/postgresql/data
-        - ../../../{{project}}-postgres-log:/var/log/postgresql
+        - ../../{{project}}-postgres-data:/var/lib/postgresql/data
+        - ../../{{project}}-postgres-log:/var/log/postgresql
         - ./docker/init-unix.sql:/docker-entrypoint-initdb.d/init.sql # to set up the DB template
       ports:
         - '5433:5432'
@@ -31,15 +31,15 @@ services:
       entrypoint: |
         /bin/sh -c "chown 1000:1000 /esBindMount"
       volumes:
-        - ../../../{{project}}-elasticsearch-data:/esBindMount
+        - ../../{{project}}-elasticsearch-data:/esBindMount
 
 
     elasticsearch-{{project_urlsafe}}:
       container_name: elasticsearch-{{project_urlsafe}}
       image: elasticsearch:8.5.0
       volumes:
-        #- ../../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
-        - ../../../{{project}}-elasticsearch-data:/usr/share/elasticsearch/data
+        #- ../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
+        - ../../{{project}}-elasticsearch-data:/usr/share/elasticsearch/data
       ports:
         - "9201:9200"
         - "9301:9300"
@@ -67,7 +67,7 @@ services:
     #  container_name: pg-feat-{{project_urlsafe}}
     #  image: pramsey/pg_featureserv
     #  volumes:
-    #    - ../../../pg_featureserv_config_{{project}}:/config
+    #    - ../../pg_featureserv_config_{{project}}:/config
     #  environment:
     #    - DATABASE_URL=postgresql://arches_spatial_views:arches_spatial_views@db-{{project_urlsafe}}:5432/{{project}}
     #  ports:
@@ -81,7 +81,7 @@ services:
     #  container_name: pg-tile-{{project_urlsafe}}
     #  image: pramsey/pg_tileserv
     #  volumes:
-    #    - ../../../pg_tileserv_config_{{project}}:/config
+    #    - ../../pg_tileserv_config_{{project}}:/config
     #  environment:
     #    - DATABASE_URL=postgresql://arches_spatial_views:arches_spatial_views@db-{{project_urlsafe}}:5432/{{project}}
     #  ports:

@@ -12,7 +12,7 @@ services:
 
     db-{{project_urlsafe}}:
       container_name: db-{{project_urlsafe}}
-      image: postgis/postgis:14-3.2
+      image: postgis/postgis:12-3.2
       volumes:
         - postgres-data:/var/lib/postgresql/data
         - postgres-log:/var/log/postgresql
@@ -26,9 +26,8 @@ services:
 
     elasticsearch-{{project_urlsafe}}:
       container_name: elasticsearch-{{project_urlsafe}}
-      image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
+      image: docker.elastic.co/elasticsearch/elasticsearch:7.17.14
       volumes:
-        #- ../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
         - elasticsearch-data:/usr/share/elasticsearch/data
       ports:
         - "9201:9200"
@@ -48,6 +47,19 @@ services:
       ports:
         - 5673:5672
         - 15673:15672
+      networks:
+        - {{project_urlsafe}}-network
+
+    couchdb-{{project_urlsafe}}:
+      container_name: couchdb-{{project_urlsafe}}
+      image: couchdb:2.1.1
+      ports:
+        - "5985:5984"
+      env_file: 
+        - ./docker/env_file.env
+      volumes:
+        - couchdb-data:/usr/local/var/lib/couchdb
+        - couchdb-log:/usr/local/var/log/couchdb
       networks:
         - {{project_urlsafe}}-network
 
@@ -91,3 +103,5 @@ volumes:
     elasticsearch-data:
     rabbitmq-logs:
     rabbitmq-data:
+    couchdb-data:
+    couchdb-log:

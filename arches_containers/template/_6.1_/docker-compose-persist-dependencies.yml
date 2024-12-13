@@ -12,10 +12,10 @@ services:
 
     db-{{project_urlsafe}}:
       container_name: db-{{project_urlsafe}}
-      image: postgis/postgis:14-3.2
+      image: postgis/postgis:12-3.2
       volumes:
-        - postgres-data:/var/lib/postgresql/data
-        - postgres-log:/var/log/postgresql
+        - ../../{{project}}-postgres-data:/var/lib/postgresql/data
+        - ../../{{project}}-postgres-log:/var/log/postgresql
         - ./docker/init-unix.sql:/docker-entrypoint-initdb.d/init.sql # to set up the DB template
       ports:
         - '5433:5432'
@@ -23,13 +23,21 @@ services:
         - ./docker/env_file.env
       networks:
         - {{project_urlsafe}}-network
+    
+    elastic-bindmount-init_{{project_urlsafe}}:
+      image: alpine
+      container_name: elastic-bindmount-init-{{project_urlsafe}}
+      restart: "no"
+      entrypoint: |
+        /bin/sh -c "chown 1000:1000 /esBindMount"
+      volumes:
+        - ../../{{project}}-elasticsearch-data:/esBindMount
 
     elasticsearch-{{project_urlsafe}}:
       container_name: elasticsearch-{{project_urlsafe}}
-      image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
+      image: elasticsearch:7.17.0
       volumes:
-        #- ../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
-        - elasticsearch-data:/usr/share/elasticsearch/data
+        - ../../{{project}}-elasticsearch-data:/usr/share/elasticsearch/data
       ports:
         - "9201:9200"
         - "9301:9300"
@@ -40,7 +48,7 @@ services:
 
     rabbitmq-{{project_urlsafe}}:
       container_name: rabbitmq-{{project_urlsafe}}
-      image: rabbitmq:3.12.6-management
+      image: rabbitmq:3.8-management
       hostname: my-rabbit
       volumes:
         - rabbitmq-data:/var/lib/rabbitmq/mnesia/rabbit@my-rabbit
@@ -48,6 +56,19 @@ services:
       ports:
         - 5673:5672
         - 15673:15672
+      networks:
+        - {{project_urlsafe}}-network
+
+    couchdb-{{project_urlsafe}}:
+      container_name: couchdb-{{project_urlsafe}}
+      image: couchdb:2.1.1
+      ports:
+        - "5985:5984"
+      env_file: 
+        - ./docker/env_file.env
+      volumes:
+        - couchdb-data:/usr/local/var/lib/couchdb
+        - couchdb-log:/usr/local/var/log/couchdb
       networks:
         - {{project_urlsafe}}-network
 
@@ -61,9 +82,7 @@ services:
     #  ports:
     #    - 9000:9000
     #  depends_on:
-    #    - db-{{project_urlsafe}}
-    #  networks:
-    #    - {{project_urlsafe}}-network
+    #    - db_{{project}}
     
     #pg-tile-{{project_urlsafe}}:
     #  container_name: pg-tile-{{project_urlsafe}}
@@ -75,9 +94,7 @@ services:
     #  ports:
     #    - 7800:7800
     #  depends_on:
-    #    - db-{{project_urlsafe}}
-    #  networks:
-    #    - {{project_urlsafe}}-network
+    #    - db_{{project}}
 
 
 networks:
@@ -86,8 +103,7 @@ networks:
     driver: bridge
 
 volumes:
-    postgres-data:
-    postgres-log:
-    elasticsearch-data:
     rabbitmq-logs:
     rabbitmq-data:
+    couchdb-data:
+    couchdb-log:
