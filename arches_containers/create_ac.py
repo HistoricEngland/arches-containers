@@ -1,18 +1,16 @@
-import sys, os, inspect
+import os
 import argparse
 import shutil
 from slugify import slugify
-from arches_containers.utils.ac_context import get_ac_context, get_ac_module_path, get_ac_directory_path
+from arches_containers.utils.ac_context import AcSettings, AcProjectConfig
+
+
 
 # copy directory and rename to first arg
-template_path = os.path.join(get_ac_module_path(), "template")
-context = get_ac_context()
-ac_directory = get_ac_directory_path()
+SETTINGS = AcSettings()
+template_path = os.path.join(SETTINGS.get_ac_module_path(), "template")
 replace_token = "{{project}}"
 replace_token_urlsafe = "{{project_urlsafe}}"
-
-def get_target_path(project_name):
-    return os.path.join(ac_directory, project_name)
 
 def get_template_folder(version):
     version = f"_{version}_"
@@ -27,21 +25,17 @@ def get_urlsafe_project_name(project_name):
     return slugify(text=project_name, separator="")
 
 def create_proj_directory(project_name, version):
-    target_path = get_target_path(project_name)
     template_folder = get_template_folder(version)
-    
     if template_folder is None:
         raise Exception("ERROR: version not correct or not yet supported.")
     
-    if os.path.exists(target_path):
-        raise Exception(f"ERROR: project path exists: {target_path}")
-    
+    target_path = AcProjectConfig.generate_project_path(project_name)
     shutil.copytree(template_folder, target_path)
     replace_projectname_placeholder(project_name)
     return target_path
     
 def replace_projectname_placeholder(project_name):
-    for dname, dirs, files in os.walk(get_target_path(project_name)):
+    for dname, dirs, files in os.walk(AcProjectConfig(project_name).get_project_path()):
         for fname in files:
             fpath = os.path.join(dname, fname)
             with open(fpath) as f:

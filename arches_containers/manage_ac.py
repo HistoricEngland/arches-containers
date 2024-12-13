@@ -1,17 +1,15 @@
 import os
 import subprocess
-import argparse
-import inspect
-from arches_containers.utils.ac_context import get_ac_context, get_ac_project_path, get_ac_config
+from arches_containers.utils.ac_context import AcSettings, AcProjectConfig
 import arches_containers.install_arches as install_arches_repo
+from arches_containers.create_launch_config import create_launch_config
 
 
-def compose_project(project_name, action, build):
-    project_path = get_ac_project_path(project_name)
-    if not os.path.exists(project_path):
-        print(f"Project {project_name} does not exist.")
-        exit(1)
-    
+
+def compose_project(project_name=AcSettings().get_default_project().project_name, action="up", build=False):
+    SETTINGS = AcSettings()
+    project = AcProjectConfig(project_name)
+    project_path = project.get_project_path()    
     compose_files = ["docker-compose-dependencies.yml", "docker-compose.yml"]
     if action == "down":
         compose_files.reverse()
@@ -34,8 +32,16 @@ def compose_project(project_name, action, build):
         os.chdir(project_path)
         subprocess.run(command)
 
-def initialize_project(project_name):
-    project_path = get_ac_project_path(project_name)
+def initialize_project(project_name=AcSettings().get_default_project().project_name):
+    # first check if the project is already initialized
+    # seel if there is a folder in the ac_context path with the project name
+    config = AcProjectConfig(project_name)
+    SETTINGS = AcSettings()
+    if os.path.exists(config.get_project_path()):
+        print(f"Project {project_name} is already initialized.")
+        exit(1)
+
+    project_path = config.get_project_path()
     
     compose_file = "docker-compose-init.yml"
     compose_file_path = os.path.join(project_path, compose_file)
@@ -43,34 +49,45 @@ def initialize_project(project_name):
         print(f"{compose_file} not found in {project_path}.")
         exit(1)
     
-    config = get_ac_config(project_name)
-    os.chdir(get_ac_context())
+    os.chdir(SETTINGS.context)
     command = ["docker", "compose", "-f", compose_file_path, "up", "--exit-code-from", config["project_name_url_safe"]]
     print(f"Running: {' '.join(command)}")
     result = subprocess.run(command)
     if result.returncode == 0:
-        subprocess.run(["docker", "compose", "-f", compose_file_path, "down"])
+        result = subprocess.run(["docker", "compose", "-f", compose_file_path, "down"])
     else:
         print("Initialization failed.")
 
-def main():
-    parser = argparse.ArgumentParser(description="Manage an Arches project using Docker Compose.")
-    parser.add_argument("-p", "--project_name", required=True, help="The name of the project")
-    parser.add_argument("-b", "--build", action="store_true", help="Rebuild containers when composing up")
-    parser.add_argument("-o", "--organization", default="archesproject", help="The GitHub organization of the repo (default: archesproject)")
-    parser.add_argument("action", choices=["up", "down", "init"], help="Action to perform: 'up' to start the project, 'down' to stop the project, 'init' to initialize the project")
-    
-    args = parser.parse_args()
-    print(f"Parsed arguments: {args}") 
+    if result.returncode == 0:
+        create_launch_config()
+        print("Initialization successful.")
 
-    if args.action == "init":
+def list_projects():
+    SETTINGS = AcSettings()
+    default_project_name = SETTINGS.get_default_project().project_name
+    projects = SETTINGS.projects
+    if projects:
+        print("Projects:")
+        for project in projects:
+            if project == default_project_name:
+                print(f"\033[92m- {project} (default)\033[0m")
+            else:
+                print(f"- {project}")
+    else:
+        print("No projects found.")
+
+def main(project_name=AcSettings().get_default_project().project_name, action="up", build=False):
+    CONFIG = AcProjectConfig(project_name)
+    organization = CONFIG["organization_name"]
+
+    if action == "init":
         # install arches if not already installed
-        install_arches_repo.main(args.project_name, args.organization)
+        install_arches_repo.clone_and_checkout_repo(project_name, organization)
 
-        initialize_project(args.project_name)
+        initialize_project(project_name)
         pass
     else:
-        compose_project(args.project_name, args.action, args.build)
-
-if __name__ == "__main__":
-    main()
+        if action == "list":
+            list_projects()
+        else:
+            compose_project(project_name, action, build)
