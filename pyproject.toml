@@ -4,8 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arches_containers"
-version = "0.2"
-description = "A module for managing Arches container projects. Supports Arches 6.1 to 8.0 (current development version)."
+version = "0.3"
+description = "A python developer tool for Arches Project that provides a way to create arches development environments. Supports Arches 6.1 to 8.0 (current development version)."
+requires-python = ">=3.8"
+license = { text = "MIT" }
+keywords = ["arches", "development", "containers"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+readme = "README.md"
 authors = [
     { name = "Andrew Jones", email = "andrew.jones@historicengland.org.uk" }
 ]
@@ -16,4 +31,4 @@ dependencies = [
 
 [project.scripts]
 arches-containers = "arches_containers.main:main"
-archesc = "arches_containers.main:main"
+archcon = "arches_containers.main:main"
