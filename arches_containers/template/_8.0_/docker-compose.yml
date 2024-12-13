@@ -1,4 +1,4 @@
-version: '3.8'
+
 services:
     {{project_urlsafe}}:
       container_name: {{project_urlsafe}}
