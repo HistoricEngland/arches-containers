@@ -6,7 +6,6 @@ except ImportError:
 import os
 from django.core.exceptions import ImproperlyConfigured
 import ast
-import requests
 import sys
 
 
