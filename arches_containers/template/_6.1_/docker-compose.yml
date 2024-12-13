@@ -6,9 +6,9 @@ services:
       build:
         args:
           - "PROJ_NAME={{project}}"
-          - "DOCKER_PATH=./arches-containers/projects/{{project}}/docker"
+          - "DOCKER_PATH=./.arches_containers/{{project}}/docker"
         context: ../..
-        dockerfile: ./arches-containers/projects/{{project}}/Dockerfile
+        dockerfile: ./.arches_containers/{{project}}/Dockerfile
       command: run_arches
       volumes:
         - ../../arches:/web_root/arches
