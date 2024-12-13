@@ -58,6 +58,13 @@ def get_ac_config(project_name):
     
     return config
 
+def list_ac_projects():
+    '''
+    Returns a list of all projects in the .arches-containers directory.
+    '''
+    context = get_ac_directory_path()
+    return [name for name in os.listdir(context) if os.path.isdir(os.path.join(context, name))]
+
 class AcConfig:
     def __init__(self, project_name):
         self.project_name = project_name

@@ -2,16 +2,17 @@ import sys, os, inspect
 import argparse
 import shutil
 from slugify import slugify
-from arches_containers.utils.ac_context import get_ac_context, get_ac_module_path
+from arches_containers.utils.ac_context import get_ac_context, get_ac_module_path, get_ac_directory_path
 
 # copy directory and rename to first arg
 template_path = os.path.join(get_ac_module_path(), "template")
 context = get_ac_context()
+ac_directory = get_ac_directory_path()
 replace_token = "{{project}}"
 replace_token_urlsafe = "{{project_urlsafe}}"
 
 def get_target_path(project_name):
-    return os.path.join(context, project_name)
+    return os.path.join(ac_directory, project_name)
 
 def get_template_folder(version):
     version = f"_{version}_"
