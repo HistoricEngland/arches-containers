@@ -20,7 +20,7 @@ Clone this repo into the workspace folder and then install.
 
 #### if using venv then activate, then in your /path/to/workspace
 ```sh
-pip install -r ./arches-containers/requirements.txt 
+pip install . -e
 ```
 
 ## Usage

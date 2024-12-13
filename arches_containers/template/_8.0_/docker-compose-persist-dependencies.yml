@@ -14,8 +14,8 @@ services:
       container_name: db-{{project_urlsafe}}
       image: postgis/postgis:14-3.2
       volumes:
-        - postgres-data:/var/lib/postgresql/data
-        - postgres-log:/var/log/postgresql
+        - ../../{{project}}-postgres-data:/var/lib/postgresql/data
+        - ../../{{project}}-postgres-log:/var/log/postgresql
         - ./docker/init-unix.sql:/docker-entrypoint-initdb.d/init.sql # to set up the DB template
       ports:
         - '5433:5432'
@@ -24,12 +24,21 @@ services:
       networks:
         - {{project_urlsafe}}-network
 
+    elastic-bindmount-init-{{project_urlsafe}}:
+      image: alpine
+      container_name: elastic-bindmount-init-{{project_urlsafe}}
+      restart: "no"
+      entrypoint: |
+        /bin/sh -c "chown 1000:1000 /esBindMount"
+      volumes:
+        - ../../{{project}}-elasticsearch-data:/esBindMount
+
+
     elasticsearch-{{project_urlsafe}}:
       container_name: elasticsearch-{{project_urlsafe}}
       image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
       volumes:
-        #- ../../../elasticsearch_data_{{project}}:/usr/share/elasticsearch/data
-        - elasticsearch-data:/usr/share/elasticsearch/data
+        - ../../{{project}}-elasticsearch-data:/usr/share/elasticsearch/data
       ports:
         - "9201:9200"
         - "9301:9300"
@@ -37,6 +46,8 @@ services:
         - ./docker/env_file.env
       networks:
         - {{project_urlsafe}}-network
+      depends_on:
+        - elastic-bindmount-init-{{project_urlsafe}}
 
     rabbitmq-{{project_urlsafe}}:
       container_name: rabbitmq-{{project_urlsafe}}
@@ -55,29 +66,29 @@ services:
     #  container_name: pg-feat-{{project_urlsafe}}
     #  image: pramsey/pg_featureserv
     #  volumes:
-    #    - ../../../pg_featureserv_config_{{project}}:/config
+    #    - ../../pg_featureserv_config_{{project}}:/config
     #  environment:
     #    - DATABASE_URL=postgresql://arches_spatial_views:arches_spatial_views@db-{{project_urlsafe}}:5432/{{project}}
     #  ports:
     #    - 9000:9000
-    #  depends_on:
-    #    - db-{{project_urlsafe}}
     #  networks:
     #    - {{project_urlsafe}}-network
+    #  depends_on:
+    #    - db-{{project_urlsafe}}
     
     #pg-tile-{{project_urlsafe}}:
     #  container_name: pg-tile-{{project_urlsafe}}
     #  image: pramsey/pg_tileserv
     #  volumes:
-    #    - ../../../pg_tileserv_config_{{project}}:/config
+    #    - ../../pg_tileserv_config_{{project}}:/config
     #  environment:
     #    - DATABASE_URL=postgresql://arches_spatial_views:arches_spatial_views@db-{{project_urlsafe}}:5432/{{project}}
     #  ports:
     #    - 7800:7800
-    #  depends_on:
-    #    - db-{{project_urlsafe}}
     #  networks:
     #    - {{project_urlsafe}}-network
+    #  depends_on:
+    #    - db-{{project_urlsafe}}
 
 
 networks:
@@ -86,8 +97,5 @@ networks:
     driver: bridge
 
 volumes:
-    postgres-data:
-    postgres-log:
-    elasticsearch-data:
     rabbitmq-logs:
     rabbitmq-data:
