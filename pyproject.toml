@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arches_containers"
-version = "0.1"
-description = "A module for managing Arches container projects"
+version = "0.2"
+description = "A module for managing Arches container projects. Supports Arches 6.1 to 8.0 (current development version)."
 authors = [
     { name = "Andrew Jones", email = "andrew.jones@historicengland.org.uk" }
 ]
@@ -15,5 +15,5 @@ dependencies = [
 ]
 
 [project.scripts]
-ac_create = "arches_containers.create_ac:main"
-ac_manage = "arches_containers.manage_ac:main"
+arches-containers = "arches_containers.main:main"
+archesc = "arches_containers.main:main"
