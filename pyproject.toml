@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "arches_containers"
+name = "arches-containers"
 version = "0.3"
 description = "A python developer tool for Arches Project that provides a way to create arches development environments. Supports Arches 6.1 to 8.0 (current development version)."
 requires-python = ">=3.8"
