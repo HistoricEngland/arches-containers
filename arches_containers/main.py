@@ -3,6 +3,7 @@ from slugify import slugify
 from arches_containers.manage import compose_project, initialize_project
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject, AcProjectSettings
+from arches_containers.utils.create_launch_config import generate_launch_config
 
    
 
@@ -34,6 +35,9 @@ def main():
     # Sub-parser for the delete command
     parser_delete = subparsers.add_parser("delete", help="Delete an existing container project")
     parser_delete.add_argument("-p", "--project_name", required=True, help="The name of the project to delete")
+    
+    # Sub-parser for the generate-launch-config command
+    parser_launch = subparsers.add_parser("generate-debug-config", help="Generate vscode launch.json configuration for the workspace")
     
     args = parser.parse_args()
     WORKSPACE = AcWorkspace()
@@ -88,6 +92,9 @@ def main():
                 print(f"- {project}")
     elif args.command == "delete":
         WORKSPACE.delete_project(args.project_name)
+    
+    elif args.command == "generate-debug-config":
+        generate_launch_config()
     
     else:
         parser.print_help()
