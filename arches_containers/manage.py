@@ -2,7 +2,6 @@ import os
 import subprocess
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
-from arches_containers.create_launch_config import create_launch_config
 
 DOCKER_COMPOSE_INIT_FILE = "docker-compose-init.yml"
 DOCKER_COMPOSE_FILE = "docker-compose.yml"
@@ -58,9 +57,7 @@ def initialize_project(project_name):
     else:
         print("Initialization failed.")
 
-    if result.returncode == 0:
-        create_launch_config()
-        print("Initialization successful.")
+    print("Initialization complete.")
 
 def main(project_name=None, action="up", build=False):
     WORKSPACE = AcWorkspace()
