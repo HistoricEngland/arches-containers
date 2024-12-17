@@ -4,9 +4,7 @@ from arches_containers.manage import compose_project, initialize_project
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject, AcProjectSettings
 
-def handle_create_container_project(args):
-    WORKSPACE = AcWorkspace()
-    
+   
 
 def main():
     parser = argparse.ArgumentParser(description="Create and manage Arches container projects.")
