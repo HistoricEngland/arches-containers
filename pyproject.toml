@@ -31,4 +31,4 @@ dependencies = [
 
 [project.scripts]
 arches-containers = "arches_containers.main:main"
-archcon = "arches_containers.main:main"
+acon = "arches_containers.main:main"
