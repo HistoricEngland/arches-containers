@@ -62,7 +62,7 @@ def initialize_project(project_name):
 def main(project_name=None, action="up", build=False):
     ac_workspace = AcWorkspace()
     if project_name is None:
-        project_name = ac_workspace.get_default_project_name()
+        project_name = ac_workspace.get_active_project_name()
 
     ac_project = ac_workspace.get_project(project_name)
     organization = ac_project["arches_repo_organization"]

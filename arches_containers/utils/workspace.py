@@ -20,7 +20,7 @@ REPLACE_TOKEN_URLSAFE = "{{project_urlsafe}}"
 
 
 DEFAULT_AC_SETTINGS = {
-    "default_project": "",
+    "active_project": "",
 }
 
 # PUBLIC CLASSES
@@ -93,36 +93,36 @@ class AcSettings:
         with open(self._config_path, "w") as settings_file:
             json.dump(settings, settings_file, indent=4)
 
-    def set_default_project(self, project_name):
+    def set_active_project(self, project_name):
         if project_name not in self._workspace.list_projects():
             raise Exception(f"Project does not exist: {project_name}")
         settings = self.settings
-        settings["default_project"] = project_name
+        settings["active_project"] = project_name
         self.save_settings(settings)
 
-    def get_default_project(self) -> AcProject:
+    def get_active_project(self) -> AcProject:
         '''
-        Returns the default project configuration. 
+        Returns the active project configuration. 
         '''
-        if self.settings["default_project"] == "":
+        if self.settings["active_project"] == "":
             try:
-                self.set_default_project(self._workspace.list_projects()[0])
+                self.set_active_project(self._workspace.list_projects()[0])
             except IndexError:
-                print("No default project found. Provide a project name or run 'arches-containers create' to create a new project.")
+                print("No active project found. Provide a project name or run 'arches-containers create' to create a new project.")
                 return None
         
-        default_project = self._workspace.get_project(self.settings["default_project"])
-        if default_project is None:
-            print("No default project found. Provide a project name or run 'arches-containers create' to create a new project.")
+        active_project = self._workspace.get_project(self.settings["active_project"])
+        if active_project is None:
+            print("No active project found. Provide a project name or run 'arches-containers create' to create a new project.")
             return None
         
-        return default_project
+        return active_project
     
-    def get_default_project_name(self):
+    def get_active_project_name(self):
         '''
-        Returns the default project name.
+        Returns the active project name.
         '''
-        project = self.get_default_project()
+        project = self.get_active_project()
         if project:
             return project.project_name
         return ""
@@ -133,9 +133,9 @@ class AcSettings:
         '''
         return os.path.join(str(self._workspace), "settings.json")
     
-    def clear_default_project(self):
+    def clear_active_project(self):
         settings = self.settings
-        settings["default_project"] = ""
+        settings["active_project"] = ""
         self.save_settings(settings)
 
 class AcWorkspace:
@@ -201,8 +201,8 @@ class AcWorkspace:
 
         ac_settings = self.get_settings()
         
-        if ac_settings.settings["default_project"] == "":
-            ac_settings.set_default_project(project_name)
+        if ac_settings.settings["active_project"] == "":
+            ac_settings.set_active_project(project_name)
         return target_path
         
     def _replace_projectname_placeholder(self,project_name, target_path):
@@ -263,10 +263,10 @@ class AcWorkspace:
         '''
 
         project = self.get_project(project_name)
-        # remvove as the default project if it is the default project
+        # remvove as the active project if it is the active project
         ac_settings = self.get_settings()
-        if ac_settings.get_default_project_name() == project_name:
-            ac_settings.clear_default_project()
+        if ac_settings.get_active_project_name() == project_name:
+            ac_settings.clear_active_project()
 
         project_path = project.get_project_path()
         shutil.rmtree(project_path)
