@@ -40,33 +40,33 @@ def main():
     parser_launch = subparsers.add_parser("generate-debug-config", help="Generate vscode launch.json configuration for the workspace")
     
     args = parser.parse_args()
-    WORKSPACE = AcWorkspace()
-    SETTINGS = WORKSPACE.get_settings()
+    ac_workspace = AcWorkspace()
+    ac_settings = ac_workspace.get_settings()
 
     if args.command == "create":
         project_name = slugify(args.project_name)
-        project = WORKSPACE.create_project(project_name, args)
+        project = ac_workspace.create_project(project_name, args)
         if args.set_default:
-            SETTINGS.set_default_project(project.project_name)
+            ac_settings.set_default_project(project.project_name)
 
     elif args.command == "manage":
         
         if args.project_name == "":
             try:
-                args.project_name = SETTINGS.get_default_project().project_name
+                args.project_name = ac_settings.get_default_project().project_name
             except Exception as e:
                 print("No project name passed and no default project set. Run 'arches-containers create' to create a new project.")
                 exit(1)
 
-        CONFIG = WORKSPACE.get_project(args.project_name)
+        ac_project = ac_workspace.get_project(args.project_name)
         if args.organization:
-            CONFIG[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
+            ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
         if args.branch:
-            CONFIG[AcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
-        CONFIG.save()
+            ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
+        ac_project.save()
 
         if args.action == "set_default":
-            SETTINGS.set_default_project(args.project_name)
+            ac_settings.set_default_project(args.project_name)
             print(f"Project '{args.project_name}' set as default.")
             exit(0)
 
@@ -78,20 +78,20 @@ def main():
         
 
     elif args.command == "list":
-        projects = WORKSPACE.list_projects()
+        projects = ac_workspace.list_projects()
         if not projects:
             print("No projects found.")
             exit(0)
 
         print("Projects:")
-        default_project = SETTINGS.get_default_project()
+        default_project = ac_settings.get_default_project()
         for project in projects:
             if default_project and project == default_project.project_name:
                 print(f"\033[92m- {project} (default)\033[0m")
             else:
                 print(f"- {project}")
     elif args.command == "delete":
-        WORKSPACE.delete_project(args.project_name)
+        ac_workspace.delete_project(args.project_name)
     
     elif args.command == "generate-debug-config":
         generate_launch_config()

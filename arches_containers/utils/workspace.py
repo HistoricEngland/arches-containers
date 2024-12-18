@@ -18,6 +18,11 @@ TEMPLATE_PATH = os.path.join(_get_ac_module_path(), "template")
 REPLACE_TOKEN = "{{project}}"
 REPLACE_TOKEN_URLSAFE = "{{project_urlsafe}}"
 
+
+DEFAULT_AC_SETTINGS = {
+    "default_project": "",
+}
+
 # PUBLIC CLASSES
 
 class AcProjectSettings(Enum):
@@ -72,22 +77,17 @@ class AcSettings:
     def settings(self):
         return self._load_settings()
 
-    def _DEFAULT_SETTINGS(self):
-        return {
-            "default_project": "",
-        }
-
     def _load_settings(self):
         settings_path = os.path.join(self._workspace._get_ac_directory_path(), "settings.json")
         if os.path.exists(settings_path):
             with open(settings_path, "r") as settings_file:
                 # if settings file is empty, return default settings
                 if os.stat(settings_path).st_size == 0:
-                    return self._DEFAULT_SETTINGS()
+                    return DEFAULT_AC_SETTINGS
                 
                 return json.load(settings_file)
         else:
-            return self._DEFAULT_SETTINGS()
+            return DEFAULT_AC_SETTINGS
     
     def save_settings(self, settings):
         with open(self._config_path, "w") as settings_file:
@@ -199,10 +199,10 @@ class AcWorkspace:
         shutil.copytree(template_folder, target_path)
         self._replace_projectname_placeholder(project_name, target_path)
 
-        SETTINGS = self.get_settings()
+        ac_settings = self.get_settings()
         
-        if SETTINGS.settings["default_project"] == "":
-            SETTINGS.set_default_project(project_name)
+        if ac_settings.settings["default_project"] == "":
+            ac_settings.set_default_project(project_name)
         return target_path
         
     def _replace_projectname_placeholder(self,project_name, target_path):
@@ -264,9 +264,9 @@ class AcWorkspace:
 
         project = self.get_project(project_name)
         # remvove as the default project if it is the default project
-        SETTINGS = self.get_settings()
-        if SETTINGS.get_default_project_name() == project_name:
-            SETTINGS.clear_default_project()
+        ac_settings = self.get_settings()
+        if ac_settings.get_default_project_name() == project_name:
+            ac_settings.clear_default_project()
 
         project_path = project.get_project_path()
         shutil.rmtree(project_path)

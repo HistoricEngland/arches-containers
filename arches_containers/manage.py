@@ -35,8 +35,8 @@ def compose_project(project_name, action="up", build=False):
 def initialize_project(project_name):
     # first check if the project is already initialized
     # seel if there is a folder in the workspace path with the project name
-    WORKSPACE = AcWorkspace()
-    config = WORKSPACE.get_project(project_name)
+    ac_workspace = AcWorkspace()
+    config = ac_workspace.get_project(project_name)
     if os.path.exists(config.get_project_path()):
         print(f"Project {project_name} is already initialized.")
         exit(1)
@@ -60,12 +60,12 @@ def initialize_project(project_name):
     print("Initialization complete.")
 
 def main(project_name=None, action="up", build=False):
-    WORKSPACE = AcWorkspace()
+    ac_workspace = AcWorkspace()
     if project_name is None:
-        project_name = WORKSPACE.get_default_project_name()
+        project_name = ac_workspace.get_default_project_name()
 
-    CONFIG = WORKSPACE.get_project(project_name)
-    organization = CONFIG["arches_repo_organization"]
+    ac_project = ac_workspace.get_project(project_name)
+    organization = ac_project["arches_repo_organization"]
 
     if action == "init":
         # install arches if not already installed
