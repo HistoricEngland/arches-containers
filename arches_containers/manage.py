@@ -8,6 +8,9 @@ DOCKER_COMPOSE_FILE = "docker-compose.yml"
 DOCKER_COMPOSE_DEPENDENCIES_FILE = "docker-compose-dependencies.yml"
 
 def compose_project(project_name, action="up", build=False):
+    '''
+    Compose the project using docker-compose.yml and docker-compose-dependencies.yml files.
+    '''
     project = AcWorkspace().get_project(project_name)
     project_path = project.get_project_path()    
     compose_files = [DOCKER_COMPOSE_DEPENDENCIES_FILE, DOCKER_COMPOSE_FILE]
@@ -33,8 +36,9 @@ def compose_project(project_name, action="up", build=False):
         subprocess.run(command)
 
 def initialize_project(project_name):
-    # first check if the project is already initialized
-    # seel if there is a folder in the workspace path with the project name
+    '''
+    Initialize the project using the docker-compose-init.yml file.
+    '''
     ac_workspace = AcWorkspace()
     config = ac_workspace.get_project(project_name)
     if os.path.exists(config.get_project_path()):
