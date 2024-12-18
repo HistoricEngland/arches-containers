@@ -4,6 +4,7 @@ import shutil
 from slugify import slugify
 import arches_containers as ac
 from enum import Enum
+import datetime
 
 AC_DIRECTORY_NAME = ".arches_containers"
 
@@ -285,3 +286,50 @@ class AcWorkspace:
         Returns the AcSettings object.
         '''
         return AcSettings(self)
+
+    def export_project(self, project_name, repo_path):
+        '''
+        Exports a project from the .arches-containers folder to the root of a given repo folder.
+        '''
+        project = self.get_project(project_name)
+        if project is None:
+            raise Exception(f"Project {project_name} not found.")
+        
+        project_path = project.get_project_path()
+        ac_repo_path = os.path.join(repo_path, ".ac")
+        
+        if os.path.exists(ac_repo_path):
+            confirm = input(f"The directory {ac_repo_path} already exists. Proceed? (y/n): ")
+            if confirm.lower() != 'y':
+                print("Export cancelled.")
+                return
+            
+            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            new_ac_repo_path = f"{ac_repo_path}_{timestamp}"
+            os.rename(ac_repo_path, new_ac_repo_path)
+            print(f"Existing .ac directory renamed to {new_ac_repo_path}")
+        
+        if not os.path.exists(ac_repo_path):
+            os.makedirs(ac_repo_path)
+        
+        for item in os.listdir(project_path):
+            s = os.path.join(project_path, item)
+            d = os.path.join(ac_repo_path, item)
+            if os.path.isdir(s):
+                shutil.copytree(s, d, dirs_exist_ok=True)
+            else:
+                shutil.copy2(s, d)
+        
+        # Modify Docker YAML files
+        for root, dirs, files in os.walk(ac_repo_path):
+            for file in files:
+                if file.endswith(".yml") or file.endswith(".yaml"):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, "r+") as f:
+                        content = f.read()
+                        content = content.replace(f"/.arches_containers/{project_name}", f"/{project_name}/.ac")
+                        f.seek(0)
+                        f.write(content)
+                        f.truncate()
+        
+        print(f"Project {project_name} exported to {ac_repo_path}.")

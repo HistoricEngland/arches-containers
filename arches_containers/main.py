@@ -1,4 +1,5 @@
 import argparse
+import os
 from slugify import slugify
 from arches_containers.manage import compose_project, initialize_project
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
@@ -39,6 +40,11 @@ def main():
     # Sub-parser for the generate-launch-config command
     parser_launch = subparsers.add_parser("generate-debug-config", help="Generate vscode launch.json configuration for the workspace")
     
+    # Sub-parser for the export command
+    parser_export = subparsers.add_parser("export", help="Export a project to a given repository folder")
+    parser_export.add_argument("-p", "--project_name", help="The name of the project to export. Default is the active project.")
+    parser_export.add_argument("-r", "--repo_path", help="The path to the repository folder. Default is <workspace directory path>/<project_name>")
+
     args = parser.parse_args()
     ac_workspace = AcWorkspace()
     ac_settings = ac_workspace.get_settings()
@@ -95,6 +101,16 @@ def main():
     
     elif args.command == "generate-debug-config":
         generate_launch_config()
+    
+    elif args.command == "export":
+        if args.project_name == "" or args.project_name is None:
+            try:
+                args.project_name = ac_settings.get_active_project_name()
+            except Exception as e:
+                print("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
+                exit(1)
+        repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
+        ac_workspace.export_project(args.project_name, repo_path)
     
     else:
         parser.print_help()
