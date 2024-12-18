@@ -3,10 +3,8 @@
 .VENV
 .ENV
 
-projects/
-
 .DS_Store
-**/__pycache__/**
+__pycache__
 pyc
 *.log
 .vscode/
@@ -14,3 +12,4 @@ pyc
 CACHE
 .tsconfig-paths.json
 .frontend-configuration-settings.json
+.pytest_*
