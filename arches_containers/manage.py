@@ -68,10 +68,6 @@ def initialize_project(project_name):
 
     print("Initialization complete.")
 
-def export_project(project_name, repo_path):
-    ac_workspace = AcWorkspace()
-    ac_workspace.export_project(project_name, repo_path)
-
 def main(project_name=None, action="up", build=False):
     ac_workspace = AcWorkspace()
     if project_name is None:
