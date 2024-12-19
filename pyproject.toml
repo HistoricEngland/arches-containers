@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arches-containers"
-version = "0.4.8"
+version = "0.4.9"
 description = "A python developer tool for Arches Project that provides a way to create arches development environments. Supports Arches 6.1 to 8.0 (current development version)."
 requires-python = ">=3.8"
 license = { text = "AGPL-3.0" }
