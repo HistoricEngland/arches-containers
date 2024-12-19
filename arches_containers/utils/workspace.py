@@ -1,8 +1,8 @@
-import os, json
+import os, json, sys
 import shutil
 
 from slugify import slugify
-import arches_containers as ac
+import arches_containers
 from enum import Enum
 import datetime
 
@@ -13,7 +13,7 @@ def _get_ac_module_path():
     '''
     Returns the path to the arches-containers python module. Used to locate the template directory.
     '''
-    return os.path.dirname(ac.__file__)
+    return os.path.dirname(arches_containers.__file__)
 
 TEMPLATE_PATH = os.path.join(_get_ac_module_path(), "template")
 REPLACE_TOKEN = "{{project}}"
@@ -291,12 +291,14 @@ class AcWorkspace:
         '''
         Exports a project from the .arches-containers folder to the root of a given repo folder.
         '''
+        EXPORT_AC_FOLDER = f".ac_{project_name}"
+
         project = self.get_project(project_name)
         if project is None:
             raise Exception(f"Project {project_name} not found.")
         
         project_path = project.get_project_path()
-        ac_repo_path = os.path.join(repo_path, ".ac")
+        ac_repo_path = os.path.join(repo_path, EXPORT_AC_FOLDER)
         
         if os.path.exists(ac_repo_path):
             confirm = input(f"The directory {ac_repo_path} already exists. Proceed? (y/n): ")
@@ -307,7 +309,7 @@ class AcWorkspace:
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
             new_ac_repo_path = f"{ac_repo_path}_{timestamp}"
             os.rename(ac_repo_path, new_ac_repo_path)
-            print(f"Existing .ac directory renamed to {new_ac_repo_path}")
+            print(f"Existing {EXPORT_AC_FOLDER} directory renamed to {new_ac_repo_path}")
         
         if not os.path.exists(ac_repo_path):
             os.makedirs(ac_repo_path)
@@ -327,7 +329,7 @@ class AcWorkspace:
                     file_path = os.path.join(root, file)
                     with open(file_path, "r+") as f:
                         content = f.read()
-                        content = content.replace(f"/.arches_containers/{project_name}", f"/{project_name}/.ac")
+                        content = content.replace(f"/.arches_containers/{project_name}", f"/{project_name}/{EXPORT_AC_FOLDER}")
                         f.seek(0)
                         f.write(content)
                         f.truncate()
