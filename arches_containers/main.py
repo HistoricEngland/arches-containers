@@ -45,6 +45,11 @@ def main():
     parser_export.add_argument("-p", "--project_name", help="The name of the project to export. Default is the active project.")
     parser_export.add_argument("-r", "--repo_path", help="The path to the repository folder. Default is <workspace directory path>/<project_name>")
 
+    # Sub-parser for the import command
+    parser_import = subparsers.add_parser("import", help="Import a project from a given repository folder")
+    parser_import.add_argument("-p", "--project_name", required=True, help="The name of the project to import.")
+    parser_import.add_argument("-r", "--repo_path", help="The path to the repository folder. Default is <workspace directory path>/<project_name>")
+
     args = parser.parse_args()
     ac_workspace = AcWorkspace()
     ac_settings = ac_workspace.get_settings()
@@ -111,6 +116,13 @@ def main():
                 exit(1)
         repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
         ac_workspace.export_project(args.project_name, repo_path)
+    
+    elif args.command == "import":
+        if args.project_name == "" or args.project_name is None:
+            print("Project name is required for import.")
+            exit(1)
+        repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
+        ac_workspace.import_project(args.project_name, repo_path)
     
     else:
         parser.print_help()

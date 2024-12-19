@@ -335,3 +335,42 @@ class AcWorkspace:
                         f.truncate()
         
         print(f"Project {project_name} exported to {ac_repo_path}.")
+
+    def import_project(self, project_name, repo_path):
+        '''
+        Imports a project from the root of a given repo folder to the .arches-containers folder.
+        '''
+        IMPORT_AC_FOLDER = f".ac_{project_name}"
+        ac_repo_path = os.path.join(repo_path, IMPORT_AC_FOLDER)
+        
+        if not os.path.exists(ac_repo_path):
+            raise Exception(f"The directory {ac_repo_path} does not exist.")
+        
+        project_path = os.path.join(self._get_ac_directory_path(), project_name)
+        
+        if os.path.exists(project_path):
+            confirm = input(f"The project {project_name} already exists. Proceed? (y/n): ")
+            if confirm.lower() != 'y':
+                print("Import cancelled.")
+                return
+            
+            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            new_project_path = f"{project_path}_{timestamp}"
+            os.rename(project_path, new_project_path)
+            print(f"Existing project directory renamed to {new_project_path}")
+        
+        shutil.copytree(ac_repo_path, project_path, dirs_exist_ok=True)
+        
+        # Modify Docker YAML files
+        for root, dirs, files in os.walk(project_path):
+            for file in files:
+                if file.endswith(".yml") or file.endswith(".yaml"):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, "r+") as f:
+                        content = f.read()
+                        content = content.replace(f"/{project_name}/{IMPORT_AC_FOLDER}", f"/.arches_containers/{project_name}")
+                        f.seek(0)
+                        f.write(content)
+                        f.truncate()
+        
+        print(f"Project {project_name} imported from {ac_repo_path}.")
