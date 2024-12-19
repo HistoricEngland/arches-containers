@@ -13,3 +13,10 @@ CACHE
 .tsconfig-paths.json
 .frontend-configuration-settings.json
 .pytest_*
+
+# Ignore build artifacts
+dist/
+*.egg-info/
+build/
+*.whl
+*.tar.gz
