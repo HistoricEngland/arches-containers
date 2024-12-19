@@ -24,6 +24,11 @@ def compose_project(project_name, action="up", build=False):
             exit(1)
     
     for compose_file in compose_files:
+        if compose_file == DOCKER_COMPOSE_FILE and action == "up":
+            # wait 5 seconds for dependencies to start
+            print("Waiting for dependencies to start...")
+            subprocess.run(["sleep", "15"])
+
         compose_file_path = os.path.join(project_path, compose_file)
         command = ["docker", "compose", "-f", compose_file_path, action]
         if action == "up":
@@ -40,11 +45,11 @@ def initialize_project(project_name):
     Initialize the project using the docker-compose-init.yml file.
     '''
     ac_workspace = AcWorkspace()
-    config = ac_workspace.get_project(project_name)
-    if os.path.exists(config.get_project_path()):
+    if os.path.exists(os.path.join(ac_workspace.path, project_name)):
         print(f"Project {project_name} is already initialized.")
         exit(1)
 
+    config = ac_workspace.get_project(project_name)
     project_path = config.get_project_path()
     
     compose_file_path = os.path.join(project_path, DOCKER_COMPOSE_INIT_FILE)
