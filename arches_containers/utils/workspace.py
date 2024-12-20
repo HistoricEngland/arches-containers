@@ -344,7 +344,8 @@ class AcWorkspace:
         ac_repo_path = os.path.join(repo_path, IMPORT_AC_FOLDER)
         
         if not os.path.exists(ac_repo_path):
-            raise Exception(f"The directory {ac_repo_path} does not exist.")
+            print(f"Failed to import project. The directory {ac_repo_path} does not exist. Ensure the path is correct or use the --repo_path option if the repo directory name does not match the project name. The .ac folder must be called {IMPORT_AC_FOLDER}.")
+            exit(1)
         
         project_path = os.path.join(self._get_ac_directory_path(), project_name)
         
