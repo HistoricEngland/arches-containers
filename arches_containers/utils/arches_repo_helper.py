@@ -11,23 +11,31 @@ def _get_repo_info(project_name):
     clone_dir = f"{ac_workspace.path}/arches"
     return (ac_project, repo_url, clone_dir, branch)
 
-def clone_and_checkout_repo(project_name):
+def clone_and_checkout_repo(project_name, verbose=False):
     ac_project, repo_url, clone_dir, branch = _get_repo_info(project_name)
     
     if not os.path.exists(clone_dir):
-        results = subprocess.run(["git", "clone", repo_url, clone_dir])
+        results = subprocess.run(
+            ["git", "clone", repo_url, clone_dir],
+            stdout=subprocess.PIPE if not verbose else None,
+            stderr=subprocess.PIPE if not verbose else None
+        )
         if results.returncode != 0:
-            print(f"Failed to clone repo from {repo_url}")
+            print(f"Failed to clone arches repo from {repo_url}")
             exit(1)
 
-    change_arches_branch(project_name)
+    change_arches_branch(project_name, verbose)
 
-def change_arches_branch(project_name):
+def change_arches_branch(project_name, verbose=False):
     ac_project, repo_url, clone_dir, branch = _get_repo_info(project_name)
     os.chdir(clone_dir)
-    result = subprocess.run(["git", "checkout", branch])
+    result = subprocess.run(
+        ["git", "checkout", branch],
+        stdout=subprocess.PIPE if not verbose else None,
+        stderr=subprocess.PIPE if not verbose else None
+    )
     if result.returncode != 0:
-        print(f"Failed to checkout branch {branch}")
+        print(f"Failed to checkout arches branch {branch}")
         exit(1)
     
-    print(f"Changed branch to {branch}")
+    print(f"Changed arches repo branch to {branch}")

@@ -7,7 +7,7 @@ DOCKER_COMPOSE_INIT_FILE = "docker-compose-init.yml"
 DOCKER_COMPOSE_FILE = "docker-compose.yml"
 DOCKER_COMPOSE_DEPENDENCIES_FILE = "docker-compose-dependencies.yml"
 
-def compose_project(project_name, action="up", build=False):
+def compose_project(project_name, action="up", build=False, verbose=False):
     '''
     Compose the project using docker-compose.yml and docker-compose-dependencies.yml files.
     '''
@@ -38,9 +38,16 @@ def compose_project(project_name, action="up", build=False):
         
         print(f"Running: {' '.join(command)}")
         os.chdir(project_path)
-        subprocess.run(command)
+        if verbose:
+            result = subprocess.run(command)
+        else:
+            result = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        if result.returncode != 0:
+            print(f"Failed to run {compose_file}.")
+            exit(1)
 
-def initialize_project(project_name):
+def initialize_project(project_name, verbose=False):
     '''
     Initialize the project using the docker-compose-init.yml file.
     '''
@@ -60,15 +67,22 @@ def initialize_project(project_name):
     os.chdir(project_path)
     command = ["docker", "compose", "-f", compose_file_path, "up", "--exit-code-from", config["project_name_url_safe"]]
     print(f"Running: {' '.join(command)}")
-    result = subprocess.run(command)
-    if result.returncode == 0:
-        result = subprocess.run(["docker", "compose", "-f", compose_file_path, "down"])
+    if verbose:
+        result = subprocess.run(command)
+        if result.returncode == 0:
+            result = subprocess.run(["docker", "compose", "-f", compose_file_path, "down"])
+        else:
+            print("Initialization failed.")
     else:
-        print("Initialization failed.")
+        result = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if result.returncode == 0:
+            result = subprocess.run(["docker", "compose", "-f", compose_file_path, "down"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            print("Initialization failed.")
 
     print("Initialization complete.")
 
-def main(project_name=None, action="up", build=False):
+def main(project_name=None, action="up", build=False, verbose=False):
     ac_workspace = AcWorkspace()
     if project_name is None:
         project_name = ac_workspace.get_active_project_name()
@@ -78,8 +92,9 @@ def main(project_name=None, action="up", build=False):
 
     if action == "init":
         # install arches if not already installed
-        arches_repo_helper.clone_and_checkout_repo(project_name, organization)
-        initialize_project(project_name)
+        arches_repo_helper.clone_and_checkout_repo(project_name, organization, verbose)
+        initialize_project(project_name, verbose)
         pass
     else:
-        compose_project(project_name, action, build)
+        arches_repo_helper.change_arches_branch(project_name)
+        compose_project(project_name, action, build, verbose)

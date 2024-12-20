@@ -28,6 +28,7 @@ def main():
     parser_manage.add_argument("-b", "--build", action="store_true", help="Rebuild containers when composing up")
     parser_manage.add_argument("-o", "--organization", default="archesproject", help="The GitHub organization of the arches repo (default: archesproject)")
     parser_manage.add_argument("-br", "--branch", help="The branch of the arches repo to use. Default is the 'dev/<version>.x' branch.")
+    parser_manage.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
     parser_manage.add_argument("action", choices=["up", "down", "init", "activate"], help="Action to perform: 'up' to start the project, 'down' to stop the project, 'init' to initialize the project, 'activate' to set the project as the active project")
     
     # Sub-parser for the list command
@@ -61,7 +62,7 @@ def main():
             ac_settings.set_active_project(project.project_name)
 
     elif args.command == "manage":
-        
+
         if args.project_name == "":
             try:
                 args.project_name = ac_settings.get_active_project().project_name
@@ -78,14 +79,16 @@ def main():
 
         if args.action == "activate":
             ac_settings.set_active_project(args.project_name)
+            arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
             print(f"Project '{args.project_name}' set as active.")
             exit(0)
 
         if args.action == "init":
-            arches_repo_helper.clone_and_checkout_repo(args.project_name)
-            initialize_project(args.project_name)
+            arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
+            initialize_project(args.project_name, args.verbose)
         else:
-            compose_project(args.project_name, args.action, args.build)
+            arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
+            compose_project(args.project_name, args.action, args.build, args.verbose)
         
 
     elif args.command == "list":
