@@ -127,9 +127,6 @@ def main():
         with AcOutputManager(f"Deleting project: {args.project_name}") as spinner:
             AcOutputManager.write(f"▶️ Deleting project: {args.project_name}")
             
-            if args.verbose:
-                AcOutputManager.pretty_write_args(args)
-            
             ac_workspace.delete_project(args.project_name)
     
     # ========================================================================================================
