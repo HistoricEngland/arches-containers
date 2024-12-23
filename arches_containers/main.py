@@ -1,13 +1,15 @@
 import argparse
 import os
 from slugify import slugify
-from arches_containers.manage import compose_project, initialize_project
+from yaspin import yaspin
+from arches_containers import AC_VERSION as arches_containers_version
+from arches_containers.manage import compose_project, initialize_project, status
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject, AcProjectSettings
 from arches_containers.utils.create_launch_config import generate_launch_config
+from arches_containers.utils.logger import AcOutputManager
 
    
-
 def main():
     parser = argparse.ArgumentParser(description="Create and manage Arches container projects.")
     
@@ -51,84 +53,119 @@ def main():
     parser_import.add_argument("-p", "--project_name", required=True, help="The name of the project to import.")
     parser_import.add_argument("-r", "--repo_path", help="The path to the repository folder. Default is <workspace directory path>/<project_name>")
 
+    # Sub-parser for the status command
+    parser_status = subparsers.add_parser("status", help="Check container status")
+
     args = parser.parse_args()
+    
     ac_workspace = AcWorkspace()
     ac_settings = ac_workspace.get_settings()
 
+    # ========================================================================================================
     if args.command == "create":
-        project_name = slugify(args.project_name)
-        project = ac_workspace.create_project(project_name, args)
-        if args.activate:
-            ac_settings.set_active_project(project.project_name)
+        with AcOutputManager("Creating project") as spinner:
+            AcOutputManager.write(f"▶️ Creating project: {args.project_name}")
+            if args.verbose:
+                AcOutputManager.pretty_write_args(args)
 
+            project_name = slugify(args.project_name)
+            project = ac_workspace.create_project(project_name, args)
+            if args.activate:
+                ac_settings.set_active_project(project.project_name)
+    # ========================================================================================================
     elif args.command == "manage":
-
         if args.project_name == "":
             try:
                 args.project_name = ac_settings.get_active_project().project_name
             except Exception as e:
-                print("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
-                exit(1)
+                AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
 
-        ac_project = ac_workspace.get_project(args.project_name)
-        if args.organization:
-            ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
-        if args.branch:
-            ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
-        ac_project.save()
+        with AcOutputManager(f"Managing project: {args.project_name}") as spinner:
+            AcOutputManager.write(f"▶️ Managing project: {args.project_name}")
+            
+            ac_project = ac_workspace.get_project(args.project_name)
+            if args.organization:
+                ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
+            if args.branch:
+                ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
+            ac_project.save()
 
-        if args.action == "activate":
-            ac_settings.set_active_project(args.project_name)
-            arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
-            print(f"Project '{args.project_name}' set as active.")
-            exit(0)
+            if args.verbose:
+                AcOutputManager.pretty_write_args(vars(args))
 
-        if args.action == "init":
-            arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
-            initialize_project(args.project_name, args.verbose)
-        else:
-            arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
-            compose_project(args.project_name, args.action, args.build, args.verbose)
-        
+            if args.action == "activate":
+                ac_settings.set_active_project(args.project_name)
+                arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
+                AcOutputManager.completed_step(f"Project '{args.project_name}' set as active.")
 
-    elif args.command == "list":
-        projects = ac_workspace.list_projects()
-        if not projects:
-            print("No projects found.")
-            exit(0)
-
-        print("Projects:")
-        default_project = ac_settings.get_active_project()
-        for project in projects:
-            if default_project and project == default_project.project_name:
-                print(f"\033[92m- {project} (active)\033[0m")
+            
+            if args.action == "init":
+                arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
+                initialize_project(args.project_name, args.verbose)
             else:
-                print(f"- {project}")
+                arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
+                compose_project(args.project_name, args.action, args.build, args.verbose)
+
+    # ========================================================================================================
+    elif args.command == "list":
+        with AcOutputManager("Listing projects") as spinner:
+            AcOutputManager.write("▶️ Arches Container Projects")
+            projects = ac_workspace.list_projects()
+            if not projects:
+                spinner.write("No projects found.")
+                exit(0)
+
+            default_project = ac_settings.get_active_project()
+            for project in projects:
+                if default_project and project == default_project.project_name:
+                    spinner.write(f"   \033[92m- {project} (active)\033[0m")
+                else:
+                    spinner.write(f"   - {project}")
+
+    # ========================================================================================================
     elif args.command == "delete":
-        ac_workspace.delete_project(args.project_name)
+        with AcOutputManager(f"Deleting project: {args.project_name}") as spinner:
+            AcOutputManager.write(f"▶️ Deleting project: {args.project_name}")
+            
+            if args.verbose:
+                AcOutputManager.pretty_write_args(args)
+            
+            ac_workspace.delete_project(args.project_name)
     
+    # ========================================================================================================
     elif args.command == "generate-debug-config":
-        generate_launch_config()
+        with AcOutputManager("Generating launch.json") as spinner:
+            generate_launch_config()
     
+    # ========================================================================================================
     elif args.command == "export":
-        if args.project_name == "" or args.project_name is None:
-            try:
-                args.project_name = ac_settings.get_active_project_name()
-            except Exception as e:
-                print("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
-                exit(1)
-        repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
-        ac_workspace.export_project(args.project_name, repo_path)
+        with AcOutputManager("Exporting project") as spinner:
+            if args.project_name == "" or args.project_name is None:
+                try:
+                    args.project_name = ac_settings.get_active_project_name()
+                except Exception as e:
+                    spinner.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
+                    exit(1)
+            repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
+            ac_workspace.export_project(args.project_name, repo_path)
     
+    # ========================================================================================================
     elif args.command == "import":
-        if args.project_name == "" or args.project_name is None:
-            print("Project name is required for import.")
-            exit(1)
-        repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
-        ac_workspace.import_project(args.project_name, repo_path)
+        with AcOutputManager("Importing project") as spinner:
+            if args.project_name == "" or args.project_name is None:
+                spinner.fail("Project name is required for import.")
+                exit(1)
+            repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
+            ac_workspace.import_project(args.project_name, repo_path)
     
+    # ========================================================================================================
+    elif args.command == "status":
+        with AcOutputManager("Checking active project container status") as spinner:
+            AcOutputManager.write("▶️ Checking active project container status")
+            status()
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()

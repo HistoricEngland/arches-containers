@@ -1,7 +1,10 @@
 import os
 import subprocess
+from yaspin import yaspin
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
+from arches_containers.utils.logger import AcOutputManager
+from arches_containers.utils.status import get_running_containers
 
 DOCKER_COMPOSE_INIT_FILE = "docker-compose-init.yml"
 DOCKER_COMPOSE_FILE = "docker-compose.yml"
@@ -11,6 +14,7 @@ def compose_project(project_name, action="up", build=False, verbose=False):
     '''
     Compose the project using docker-compose.yml and docker-compose-dependencies.yml files.
     '''
+    AcOutputManager.text(f"{'starting' if action == 'up' else 'stopping'} project")
     project = AcWorkspace().get_project(project_name)
     project_path = project.get_project_path()    
     compose_files = [DOCKER_COMPOSE_DEPENDENCIES_FILE, DOCKER_COMPOSE_FILE]
@@ -20,13 +24,10 @@ def compose_project(project_name, action="up", build=False, verbose=False):
     for compose_file in compose_files:
         compose_file_path = os.path.join(project_path, compose_file)
         if not os.path.exists(compose_file_path):
-            print(f"{compose_file} not found in {project_path}.")
-            exit(1)
+            AcOutputManager.failed_step(f"{compose_file} not found in {project_path}.")
     
     for compose_file in compose_files:
         if compose_file == DOCKER_COMPOSE_FILE and action == "up":
-            # wait 5 seconds for dependencies to start
-            print("Waiting for dependencies to start...")
             subprocess.run(["sleep", "15"])
 
         compose_file_path = os.path.join(project_path, compose_file)
@@ -36,7 +37,6 @@ def compose_project(project_name, action="up", build=False, verbose=False):
             if build:
                 command.append("--build")
         
-        print(f"Running: {' '.join(command)}")
         os.chdir(project_path)
         if verbose:
             result = subprocess.run(command)
@@ -44,8 +44,12 @@ def compose_project(project_name, action="up", build=False, verbose=False):
             result = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         if result.returncode != 0:
-            print(f"Failed to run {compose_file}.")
-            exit(1)
+            AcOutputManager.fail(f"failed to run {compose_file}.")
+        else:
+            AcOutputManager.complete_step(f"{'dependency' if compose_file == DOCKER_COMPOSE_DEPENDENCIES_FILE else 'project'} containers {'started' if action == 'up' else 'stopped'}.")
+
+    AcOutputManager.complete_step(f"project {project_name} {'started' if action == 'up' else 'stopped'}.")
+
 
 def initialize_project(project_name, verbose=False):
     '''
@@ -53,34 +57,42 @@ def initialize_project(project_name, verbose=False):
     '''
     ac_workspace = AcWorkspace()
     if os.path.exists(os.path.join(ac_workspace.path, project_name)):
-        print(f"Project {project_name} is already initialized.")
-        exit(1)
+        AcOutputManager.complete_step(f"project {project_name} already initialized.")
 
+    AcOutputManager.text("initializing project - building the development image if not available.")
     config = ac_workspace.get_project(project_name)
     project_path = config.get_project_path()
     
     compose_file_path = os.path.join(project_path, DOCKER_COMPOSE_INIT_FILE)
     if not os.path.exists(compose_file_path):
-        print(f"{DOCKER_COMPOSE_INIT_FILE} not found in {project_path}.")
-        exit(1)
-    
+        AcOutputManager.fail(f"{DOCKER_COMPOSE_INIT_FILE} not found in {project_path}.")
+
     os.chdir(project_path)
     command = ["docker", "compose", "-f", compose_file_path, "up", "--exit-code-from", config["project_name_url_safe"]]
-    print(f"Running: {' '.join(command)}")
     if verbose:
         result = subprocess.run(command)
         if result.returncode == 0:
             result = subprocess.run(["docker", "compose", "-f", compose_file_path, "down"])
         else:
-            print("Initialization failed.")
+            AcOutputManager.fail("failed to build the development image during initialisation.")
     else:
         result = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if result.returncode == 0:
             result = subprocess.run(["docker", "compose", "-f", compose_file_path, "down"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
-            print("Initialization failed.")
+            AcOutputManager.fail("failed to build the development image during initialisation.")
 
-    print("Initialization complete.")
+    AcOutputManager.complete_step("initialization complete.")
+
+def status():
+        ac_settings =AcWorkspace().get_settings()
+        active_project = ac_settings.get_active_project()
+        if not active_project:
+            AcOutputManager.fail("No active project set. Run 'arches-containers activate' to set an active project.")
+        
+        project_name = active_project.project_name
+        project_name_urlsafe = active_project["project_name_url_safe"]
+        get_running_containers(project_name, project_name_urlsafe)
 
 def main(project_name=None, action="up", build=False, verbose=False):
     ac_workspace = AcWorkspace()

@@ -1,7 +1,7 @@
 import os
 import subprocess
 from arches_containers.utils.workspace import AcWorkspace, AcProjectSettings
-
+from arches_containers.utils.logger import AcOutputManager
 
 def _get_repo_info(project_name):
     ac_workspace = AcWorkspace()
@@ -21,8 +21,7 @@ def clone_and_checkout_repo(project_name, verbose=False):
             stderr=subprocess.PIPE if not verbose else None
         )
         if results.returncode != 0:
-            print(f"Failed to clone arches repo from {repo_url}")
-            exit(1)
+            AcOutputManager.fail(f"failed to clone arches repo from {repo_url}")
 
     change_arches_branch(project_name, verbose)
 
@@ -35,7 +34,7 @@ def change_arches_branch(project_name, verbose=False):
         stderr=subprocess.PIPE if not verbose else None
     )
     if result.returncode != 0:
-        print(f"Failed to checkout arches branch {branch}")
-        exit(1)
+        AcOutputManager.fail(f"Failed to checkout arches branch {branch}")
     
-    print(f"Changed arches repo branch to {branch}")
+    if verbose:
+        AcOutputManager.complete_step(f"Changed arches repo branch to {branch}")

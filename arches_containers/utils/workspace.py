@@ -5,6 +5,8 @@ from slugify import slugify
 import arches_containers
 from enum import Enum
 import datetime
+from arches_containers.utils.logger import AcOutputManager
+from arches_containers.utils.status import get_running_containers
 
 AC_DIRECTORY_NAME = ".arches_containers"
 
@@ -49,7 +51,8 @@ class AcProject:
             with open(self._config_path, "r") as config_file:
                 self._config = json.load(config_file)
         except FileNotFoundError:
-            raise Exception(f"Configuration file not found for {project_name}. Run 'arches-containers create' to create a new project.")
+            AcOutputManager.fail(f"Project configuration for '{project_name}' not found.")
+            exit(1)
 
     def __getitem__(self, key):
         return self._config[key]
@@ -96,7 +99,8 @@ class AcSettings:
 
     def set_active_project(self, project_name):
         if project_name not in self._workspace.list_projects():
-            raise Exception(f"Project does not exist: {project_name}")
+            AcOutputManager.fail(f"Project '{project_name}' does not exist.")
+            exit(1)
         settings = self.settings
         settings["active_project"] = project_name
         self.save_settings(settings)
@@ -109,12 +113,12 @@ class AcSettings:
             try:
                 self.set_active_project(self._workspace.list_projects()[0])
             except IndexError:
-                print("No active project found. Provide a project name or run 'arches-containers create' to create a new project.")
+                AcOutputManager.fail("No active project found. Provide a project name or run 'arches-containers create' to create a new project.")
                 return None
         
         active_project = self._workspace.get_project(self.settings["active_project"])
         if active_project is None:
-            print("No active project found. Provide a project name or run 'arches-containers create' to create a new project.")
+            AcOutputManager.fail("No active project found. Provide a project name or run 'arches-containers create' to create a new project.")
             return None
         
         return active_project
@@ -166,6 +170,7 @@ class AcWorkspace:
 
         context = os.path.join(os.getcwd(), AC_DIRECTORY_NAME)
         os.makedirs(context)
+        AcOutputManager.write(f"> Created .arches-containers directory at {context}")
         return os.getcwd()
 
     def _get_ac_directory_path(self):
@@ -189,12 +194,12 @@ class AcWorkspace:
     def _create_proj_directory(self, project_name, version):
         template_folder = self._get_template_folder(version)
         if template_folder is None:
-            print(f"Arches version {version} not supported.")
+            AcOutputManager.fail(f"Arches version {version} not supported.")
             exit(1)
         
         target_path = os.path.join(self._get_ac_directory_path(), project_name)
         if os.path.exists(target_path):
-            print(f"Project {project_name} already exists.")
+            AcOutputManager.fail(f"Project {project_name} already exists.")
             exit(1)
 
         shutil.copytree(template_folder, target_path)
@@ -219,17 +224,11 @@ class AcWorkspace:
 
     # PUBLIC METHODS
     def get_project(self, project_name) -> AcProject:
-        '''
-        Returns the path to the project directory.
-        '''
-        context = self._get_ac_directory_path()
-        project_path = os.path.join(context, project_name)
-
-        if not os.path.exists(project_path) and not os.path.isdir(project_path):
-            print(f"Project {project_name} not found.")
-            return None
-        
-        return AcProject(project_name, self._get_ac_directory_path())
+        try:
+            return AcProject(project_name, self._get_ac_directory_path())
+        except FileNotFoundError:
+            AcOutputManager.fail(f"Project '{project_name}' not found.")
+            exit(1)
 
     def create_project(self, project_name, args):
         '''
@@ -237,8 +236,7 @@ class AcWorkspace:
         '''
 
         if project_name is None or project_name == "":
-            print("Project name is required.")
-            exit(1)
+            AcOutputManager.fail("Project name is required.")
 
         # the project must be a valid slug where the only allowed characters are letters, numbers, and underscores. It must start with a letter. it must be lowercase.
         # create a function to slugify the project name
@@ -255,7 +253,7 @@ class AcWorkspace:
         if args.organization or args.branch:
             project.save()
         
-        print(f"Project {project_name} created.")
+        AcOutputManager.success(f"Project '{project_name}' created successfully.")
         return project
     
     def delete_project(self, project_name):
@@ -272,7 +270,7 @@ class AcWorkspace:
         project_path = project.get_project_path()
         shutil.rmtree(project_path)
 
-        print(f"Project {project_name} deleted.")
+        AcOutputManager.success(f"Project {project_name} deleted.")
 
     def list_projects(self):
         '''
@@ -303,13 +301,13 @@ class AcWorkspace:
         if os.path.exists(ac_repo_path):
             confirm = input(f"The directory {ac_repo_path} already exists. Proceed? (y/n): ")
             if confirm.lower() != 'y':
-                print("Export cancelled.")
+                AcOutputManager.write("> Export cancelled.")
                 return
             
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
             new_ac_repo_path = f"{ac_repo_path}_{timestamp}"
             os.rename(ac_repo_path, new_ac_repo_path)
-            print(f"Existing {EXPORT_AC_FOLDER} directory renamed to {new_ac_repo_path}")
+            AcOutputManager.write(f"> Existing {EXPORT_AC_FOLDER} directory renamed to {new_ac_repo_path}")
         
         if not os.path.exists(ac_repo_path):
             os.makedirs(ac_repo_path)
@@ -334,7 +332,7 @@ class AcWorkspace:
                         f.write(content)
                         f.truncate()
         
-        print(f"Project {project_name} exported to {ac_repo_path}.")
+        AcOutputManager.success(f"Project {project_name} exported to {ac_repo_path}.")
 
     def import_project(self, project_name, repo_path):
         '''
@@ -344,7 +342,7 @@ class AcWorkspace:
         ac_repo_path = os.path.join(repo_path, IMPORT_AC_FOLDER)
         
         if not os.path.exists(ac_repo_path):
-            print(f"Failed to import project. The directory {ac_repo_path} does not exist. Ensure the path is correct or use the --repo_path option if the repo directory name does not match the project name. The .ac folder must be called {IMPORT_AC_FOLDER}.")
+            AcOutputManager.fail(f"Failed to import project. The directory {ac_repo_path} does not exist. Ensure the path is correct or use the --repo_path option if the repo directory name does not match the project name. The .ac folder must be called {IMPORT_AC_FOLDER}.")
             exit(1)
         
         project_path = os.path.join(self._get_ac_directory_path(), project_name)
@@ -352,13 +350,13 @@ class AcWorkspace:
         if os.path.exists(project_path):
             confirm = input(f"The project {project_name} already exists. Proceed? (y/n): ")
             if confirm.lower() != 'y':
-                print("Import cancelled.")
+                AcOutputManager.success("Import cancelled.")
                 return
             
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
             new_project_path = f"{project_path}_{timestamp}"
             os.rename(project_path, new_project_path)
-            print(f"Existing project directory renamed to {new_project_path}")
+            AcOutputManager.success(f"Existing project directory renamed to {new_project_path}")
         
         shutil.copytree(ac_repo_path, project_path, dirs_exist_ok=True)
         
@@ -374,4 +372,6 @@ class AcWorkspace:
                         f.write(content)
                         f.truncate()
         
-        print(f"Project {project_name} imported from {ac_repo_path}.")
+        AcOutputManager.success(f"Project {project_name} imported from {ac_repo_path}.")
+
+    
