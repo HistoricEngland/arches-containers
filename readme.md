@@ -6,11 +6,11 @@ Arches Containers is a developer CLI tool to create and manage containerized Arc
 
 It provides commands to create and manage arches-container projects, which contain the necessary configuration files to run Arches in a containerized environment, complete with required minimum dependencies and services.
 
-These arches-cnontainer projects can be shared with others or stored in a version control system. They can be exported to a repository folder and imported back into the workspace.
+> ⚠️ **It is not yet configured to build an image to be deployed to a hosted environment. The ability to create a basic deployable image is in the Roadmap.**
+
+These arches-container projects can be shared with others or stored in a version control system. They can be exported to a repository folder and imported back into the workspace.
 
 It can also be used to generate VSCode debug configurations to allow debugging code insode the containers.
-
-It is still in the early stages of development and is subject to change, but we welcome sugestions and contributions. See the [Contributing](#contributing) section for more information.
 
 ## Installation
 
@@ -103,7 +103,7 @@ cd /path/to/workspace
 arches-containers [OPTIONS] COMMAND [ARGS]...
 ```
 
-> Note: The command is aliased as `acon` for convenience.
+> Note: The command is aliased as `act` for convenience (**a**rches-**c**ontainer **t**ool).
 
 ### Create a Project
 
@@ -215,6 +215,15 @@ To import `project2`:
 ```sh
 cd /path/to/workspace
 arches-containers import -p project2 -r ./a_different_repo
+```
+
+### Check Container Status
+
+Steps to check container status of the active project.
+
+```sh
+cd /path/to/workspace
+arches-containers status
 ```
 
 ## Configuration of the Project
