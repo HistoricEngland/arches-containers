@@ -1,6 +1,7 @@
 import os
 import json
 from arches_containers.utils.workspace import AcWorkspace
+from arches_containers.utils.logger import AcOutputManager
 
 
 def launch_config():
@@ -29,14 +30,14 @@ def create_launch_config():
     if os.path.exists(launch_json):
         override = input("launch.json already exists. Do you want to override it? (y/n): ")
         if override.lower() != 'y':
-            print("Aborted by user.")
+            AcOutputManager.skipped_step("Aborted by user.")
             return
     with open(launch_json, "w") as f:
         json.dump({"configurations": [launch_config()]}, f, indent=4)
 
 def generate_launch_config():
     create_launch_config()
-    print("launch.json configuration generated successfully.")
+    AcOutputManager.complete_step("launch.json configuration generated successfully.")
 
 
 
