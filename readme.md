@@ -34,8 +34,6 @@ source env/bin/activate  # On Windows use `env\Scripts\activate`
     pip install arches-containers
     ```
 
-
-
 ## Usage
 
 Use the `arches-containers` command to manage arches-container projects.
@@ -48,6 +46,34 @@ arches-containers [OPTIONS] COMMAND [ARGS]...
 ```
 
 > Note: The command is aliased as `act` for convenience (**a**rches-**c**ontainer **t**ool).
+
+### Quick start
+
+1. Create a new project:
+
+    This creates the arches-container project configuration and sets it as the active project.
+
+    ```sh
+    arches-containers create -p my_project -v 7.5 --activate
+    ```
+
+1. Initialize the project:
+
+    This sets up the Arches repo, builds the development container, and creates the Arches project directory.
+
+    ```sh
+    arches-containers manage -p my_project init
+    ```
+
+1. Start the project:
+
+    This starts the containers and the Arches development server.
+
+    ```sh
+    arches-containers manage -p my_project up
+    ```
+
+1. Open a browser and navigate to `http://localhost:8002`.
 
 ### Create a Project
 
