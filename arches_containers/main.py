@@ -1,7 +1,6 @@
 import argparse
 import os
 from slugify import slugify
-from yaspin import yaspin
 from arches_containers import AC_VERSION as arches_containers_version
 from arches_containers.manage import compose_project, initialize_project, status
 import arches_containers.utils.arches_repo_helper as arches_repo_helper

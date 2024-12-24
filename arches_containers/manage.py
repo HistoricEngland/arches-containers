@@ -1,6 +1,5 @@
 import os
 import subprocess
-from yaspin import yaspin
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
 from arches_containers.utils.logger import AcOutputManager
