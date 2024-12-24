@@ -65,9 +65,7 @@ def main():
     if args.command == "create":
         with AcOutputManager("Creating project") as spinner:
             AcOutputManager.write(f"▶️ Creating project: {args.project_name}")
-            if args.verbose:
-                AcOutputManager.pretty_write_args(args)
-
+            
             project_name = slugify(args.project_name)
             project = ac_workspace.create_project(project_name, args)
             if args.activate:
@@ -95,7 +93,7 @@ def main():
 
             if args.action == "activate":
                 ac_settings.set_active_project(args.project_name)
-                arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
+                arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
                 AcOutputManager.completed_step(f"Project '{args.project_name}' set as active.")
 
             
