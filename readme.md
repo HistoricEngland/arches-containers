@@ -62,7 +62,7 @@ arches-containers [OPTIONS] COMMAND [ARGS]...
     This sets up the Arches repo, builds the development container, and creates the Arches project directory.
 
     ```sh
-    arches-containers manage -p my_project init
+    arches-containers manage init
     ```
 
 1. Start the project:
@@ -70,10 +70,10 @@ arches-containers [OPTIONS] COMMAND [ARGS]...
     This starts the containers and the Arches development server.
 
     ```sh
-    arches-containers manage -p my_project up
+    arches-containers manage up
     ```
 
-1. Open a browser and navigate to `http://localhost:8002`.
+1. Open a browser and navigate to `http://localhost:8002` once setup and webpack builds are complete.
 
 ### Create a Project
 
