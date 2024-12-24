@@ -28,7 +28,9 @@ def create_launch_config():
         os.makedirs(vscode_dir)
     launch_json = os.path.join(vscode_dir, "launch.json")
     if os.path.exists(launch_json):
+        AcOutputManager.stop_spinner()
         override = input("launch.json already exists. Do you want to override it? (y/n): ")
+        AcOutputManager.start_spinner()
         if override.lower() != 'y':
             AcOutputManager.skipped_step("Aborted by user.")
             return

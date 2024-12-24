@@ -40,8 +40,11 @@ class AcOutputManager(object):
         return self.spinner.__exit__(exc_type, exc_value, traceback)
     
     @staticmethod
-    def start_spinner(message):
-        AcOutputManager().spinner.start(message)
+    def start_spinner(message=""):
+        if message:
+            AcOutputManager().spinner.start(message)
+        else:
+            AcOutputManager().spinner.start()
 
     @staticmethod
     def stop_spinner():

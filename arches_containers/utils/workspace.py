@@ -299,7 +299,9 @@ class AcWorkspace:
         ac_repo_path = os.path.join(repo_path, EXPORT_AC_FOLDER)
         
         if os.path.exists(ac_repo_path):
+            AcOutputManager.stop_spinner()
             confirm = input(f"The directory {ac_repo_path} already exists. Proceed? (y/n): ")
+            AcOutputManager.start_spinner()
             if confirm.lower() != 'y':
                 AcOutputManager.write("> Export cancelled.")
                 return
@@ -348,7 +350,9 @@ class AcWorkspace:
         project_path = os.path.join(self._get_ac_directory_path(), project_name)
         
         if os.path.exists(project_path):
+            AcOutputManager.stop_spinner()
             confirm = input(f"The project {project_name} already exists. Proceed? (y/n): ")
+            AcOutputManager.start_spinner()
             if confirm.lower() != 'y':
                 AcOutputManager.success("Import cancelled.")
                 return
