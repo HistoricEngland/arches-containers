@@ -34,63 +34,7 @@ source env/bin/activate  # On Windows use `env\Scripts\activate`
     pip install arches-containers
     ```
 
-## Build from source and publish
 
-1. Clone the repository:
-
-    ```sh
-    cd /path/to/workspace
-    git clone https://github.com/HistoricEngland/arches-containers.git
-    cd arches-containers
-    ```
-
-1. Install the package:
-
-    ```sh
-    cd /path/to/arches-containers # where the pyproject.toml file is located
-    pip install .[dev] 
-    ```
-
-   > The `[dev]` option installs the developer dependencies. Some terminals may not support this syntax and you'll need to use quotes instead: `pip install '.[dev]'`.
-
-> ℹ: Documentation on how to build and publish to PyPI can be found [here](https://packaging.python.org/en/latest/guides/section-build-and-publish/).
-
-To build the package, run the following command:
-
-```sh
-cd /path/to/arches-containers # where the pyproject.toml file is located
-python -m build
-```
-
-This will create a `dist` folder with the built package.
-
-The instuctions for publishing us [twine](https://twine.readthedocs.io/en/stable/) to upload the package to PyPI. It expects that you have a configured [`.pypirc`](https://packaging.python.org/en/latest/specifications/pypirc/) to hold your PyPI API token credentials. The file should look like this:
-
-> ⚠️ **Do not commit this file to source control.**
-
-```ini
-[pypi]
-username = __token__
-password = <API token>
-
-[testpypi]
-username = __token__
-password =  <API token>
-```
-
-Then run the following command to upload the package:
-
-```sh
-cd /path/to/arches-containers # where the pyproject.toml file is located
-twine upload dist/*
-```
-
-For testing, you can upload to the test PyPI server by specifying the repository:
-
-```sh
-cd /path/to/arches-containers # where the pyproject.toml file is located
-twine upload --repository testpypi dist/*
-```
 
 ## Usage
 
@@ -249,6 +193,64 @@ When in the project directory, there are two files that you may want to configur
 - `<project_path>/docker/env_file.env`: This file contains environment variables that are used by the docker-compose files. You can add or remove variables as needed.
 - `<project_path>/docker/settings_local.py`: This file is copied into the arches project when the container is started. If you need to set specific development environment settings, do it here. Note that if you change the settings_local.py file copied to the your arches project directory, it will be overwritten when the container is next stopped/started/restarted, so you should always change it in the `<project_path>/docker/settings_local.py` file.
    > ROADMAP - We'll look to provide a way to manage settings_local.py synchronisation in the future as part of the `manage up/down` commands.
+
+## Build from source and publish
+
+1. Clone the repository:
+
+    ```sh
+    cd /path/to/workspace
+    git clone https://github.com/HistoricEngland/arches-containers.git
+    cd arches-containers
+    ```
+
+1. Install the package:
+
+    ```sh
+    cd /path/to/arches-containers # where the pyproject.toml file is located
+    pip install .[dev] 
+    ```
+
+   > The `[dev]` option installs the developer dependencies. Some terminals may not support this syntax and you'll need to use quotes instead: `pip install '.[dev]'`.
+
+> ℹ: Documentation on how to build and publish to PyPI can be found [here](https://packaging.python.org/en/latest/guides/section-build-and-publish/).
+
+To build the package, run the following command:
+
+```sh
+cd /path/to/arches-containers # where the pyproject.toml file is located
+python -m build
+```
+
+This will create a `dist` folder with the built package.
+
+The instuctions for publishing us [twine](https://twine.readthedocs.io/en/stable/) to upload the package to PyPI. It expects that you have a configured [`.pypirc`](https://packaging.python.org/en/latest/specifications/pypirc/) to hold your PyPI API token credentials. The file should look like this:
+
+> ⚠️ **Do not commit this file to source control.**
+
+```ini
+[pypi]
+username = __token__
+password = <API token>
+
+[testpypi]
+username = __token__
+password =  <API token>
+```
+
+Then run the following command to upload the package:
+
+```sh
+cd /path/to/arches-containers # where the pyproject.toml file is located
+twine upload dist/*
+```
+
+For testing, you can upload to the test PyPI server by specifying the repository:
+
+```sh
+cd /path/to/arches-containers # where the pyproject.toml file is located
+twine upload --repository testpypi dist/*
+```
 
 ## Contributing
 
