@@ -14,7 +14,7 @@ def test_project_service_available_with_status_200(project_name) -> bool:
     '''
     Test if the project service is available.
     '''
-    ac_settings = AcWorkspace().get_settings()
+    ac_settings = AcWorkspace().get_settings().settings
     host = ac_settings["host"]
     port = ac_settings["port"]
     url = f"http://{host}:{port}/"
