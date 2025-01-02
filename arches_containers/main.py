@@ -1,4 +1,5 @@
 import argparse
+from rich_argparse import RichHelpFormatter
 import os
 from slugify import slugify
 from arches_containers import AC_VERSION as arches_containers_version
@@ -10,12 +11,12 @@ from arches_containers.utils.logger import AcOutputManager
 
    
 def main():
-    parser = argparse.ArgumentParser(description="Create and manage Arches container projects.")
+    parser = argparse.ArgumentParser(description="Create and manage Arches container projects.", formatter_class=RichHelpFormatter)
     
     subparsers = parser.add_subparsers(dest="command", help="Sub-command help")
     
     # Sub-parser for the create command
-    parser_create = subparsers.add_parser("create", help="Create a new container project")
+    parser_create = subparsers.add_parser("create", help="Create a new container project", formatter_class=parser.formatter_class)
     parser_create.add_argument("-p", "--project_name", required=True, help="The name of the project. This value will be slugified to lowercase with underscore separators")
     parser_create.add_argument("-v", "--version", "--ver", required=True, help="The arches version the project will be using (major.minor format)")
     parser_create.add_argument("-o", "--organization", default="archesproject", help="The GitHub organization of the arches repo (default: archesproject)")
@@ -24,7 +25,7 @@ def main():
     
     
     # Sub-parser for the manage command
-    parser_manage = subparsers.add_parser("manage", help="Manage an existing container project")
+    parser_manage = subparsers.add_parser("manage", help="Manage an existing container project", formatter_class=parser.formatter_class)
     parser_manage.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
     parser_manage.add_argument("-b", "--build", action="store_true", help="Rebuild containers when composing up")
     parser_manage.add_argument("-o", "--organization", default="archesproject", help="The GitHub organization of the arches repo (default: archesproject)")
@@ -33,27 +34,27 @@ def main():
     parser_manage.add_argument("action", choices=["up", "down", "init", "activate"], help="Action to perform: 'up' to start the project, 'down' to stop the project, 'init' to initialize the project, 'activate' to set the project as the active project")
     
     # Sub-parser for the list command
-    parser_list = subparsers.add_parser("list", help="List all container projects")
+    parser_list = subparsers.add_parser("list", help="List all container projects", formatter_class=parser.formatter_class)
     
     # Sub-parser for the delete command
-    parser_delete = subparsers.add_parser("delete", help="Delete an existing container project")
+    parser_delete = subparsers.add_parser("delete", help="Delete an existing container project", formatter_class=parser.formatter_class)
     parser_delete.add_argument("-p", "--project_name", required=True, help="The name of the project to delete")
     
     # Sub-parser for the generate-launch-config command
-    parser_launch = subparsers.add_parser("generate-debug-config", help="Generate vscode launch.json configuration for the workspace")
+    parser_launch = subparsers.add_parser("generate-debug-config", help="Generate vscode launch.json configuration for the workspace", formatter_class=parser.formatter_class)
     
     # Sub-parser for the export command
-    parser_export = subparsers.add_parser("export", help="Export a project to a given repository folder")
+    parser_export = subparsers.add_parser("export", help="Export a project to a given repository folder", formatter_class=parser.formatter_class)
     parser_export.add_argument("-p", "--project_name", help="The name of the project to export. Default is the active project.")
     parser_export.add_argument("-r", "--repo_path", help="The path to the repository folder. Default is <workspace directory path>/<project_name>")
 
     # Sub-parser for the import command
-    parser_import = subparsers.add_parser("import", help="Import a project from a given repository folder")
+    parser_import = subparsers.add_parser("import", help="Import a project from a given repository folder", formatter_class=parser.formatter_class)
     parser_import.add_argument("-p", "--project_name", required=True, help="The name of the project to import.")
     parser_import.add_argument("-r", "--repo_path", help="The path to the repository folder. Default is <workspace directory path>/<project_name>")
 
     # Sub-parser for the status command
-    parser_status = subparsers.add_parser("status", help="Check container status")
+    parser_status = subparsers.add_parser("status", help="Check container status", formatter_class=parser.formatter_class)
 
     args = parser.parse_args()
     
