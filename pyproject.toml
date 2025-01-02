@@ -47,3 +47,6 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 "arches_containers" = ["template/**"]
+
+[tool.setuptools.packages.find]
+exclude = ["tests", "tests.*", "test_*"]
