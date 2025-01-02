@@ -105,25 +105,23 @@ def main():
 
     # ========================================================================================================
     elif args.command == "list":
-        with AcOutputManager("Listing projects") as spinner:
-            AcOutputManager.write("▶️ Arches Container Projects")
-            projects = ac_workspace.list_projects()
-            if not projects:
-                spinner.write("No projects found.")
-                exit(0)
+        AcOutputManager.write("▶️ Arches Container Projects")
+        projects = ac_workspace.list_projects()
+        if not projects:
+            spinner.write("No projects found.")
+            exit(0)
 
-            default_project = ac_settings.get_active_project()
-            for project in projects:
-                if default_project and project == default_project.project_name:
-                    spinner.write(f"   \033[92m- {project} (active)\033[0m")
-                else:
-                    spinner.write(f"   - {project}")
+        default_project = ac_settings.get_active_project()
+        for project in projects:
+            if default_project and project == default_project.project_name:
+                AcOutputManager.write(f"   - {project} (active)", color="green")
+            else:
+                AcOutputManager.write(f"   - {project}")
 
     # ========================================================================================================
     elif args.command == "delete":
+        AcOutputManager.write(f"▶️ Deleting project: {args.project_name}")
         with AcOutputManager(f"Deleting project: {args.project_name}") as spinner:
-            AcOutputManager.write(f"▶️ Deleting project: {args.project_name}")
-            
             ac_workspace.delete_project(args.project_name)
     
     # ========================================================================================================
@@ -133,24 +131,23 @@ def main():
     
     # ========================================================================================================
     elif args.command == "export":
-        with AcOutputManager("Exporting project") as spinner:
-            if args.project_name == "" or args.project_name is None:
-                try:
-                    args.project_name = ac_settings.get_active_project_name()
-                except Exception as e:
-                    spinner.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
-                    exit(1)
-            repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
-            ac_workspace.export_project(args.project_name, repo_path)
+        AcOutputManager.write("▶️ Exporting project")
+        if args.project_name == "" or args.project_name is None:
+            try:
+                args.project_name = ac_settings.get_active_project_name()
+            except Exception as e:
+                AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
+        repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
+        ac_workspace.export_project(args.project_name, repo_path)
     
     # ========================================================================================================
     elif args.command == "import":
-        with AcOutputManager("Importing project") as spinner:
-            if args.project_name == "" or args.project_name is None:
-                spinner.fail("Project name is required for import.")
-                exit(1)
-            repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
-            ac_workspace.import_project(args.project_name, repo_path)
+        AcOutputManager.write("▶️ Importing project")
+        if args.project_name == "" or args.project_name is None:
+            AcOutputManager.fail("Project name is required for import.")
+
+        repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
+        ac_workspace.import_project(args.project_name, repo_path)
     
     # ========================================================================================================
     elif args.command == "status":
