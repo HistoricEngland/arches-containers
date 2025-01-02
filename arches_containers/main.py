@@ -109,7 +109,7 @@ def main():
         AcOutputManager.write("▶️ Arches Container Projects")
         projects = ac_workspace.list_projects()
         if not projects:
-            spinner.write("No projects found.")
+            AcOutputManager.write("No projects found.")
             exit(0)
 
         default_project = ac_settings.get_active_project()
