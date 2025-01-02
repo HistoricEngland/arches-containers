@@ -9,6 +9,24 @@ DOCKER_COMPOSE_INIT_FILE = "docker-compose-init.yml"
 DOCKER_COMPOSE_FILE = "docker-compose.yml"
 DOCKER_COMPOSE_DEPENDENCIES_FILE = "docker-compose-dependencies.yml"
 
+
+def test_project_service_available_with_status_200(project_name) -> bool:
+    '''
+    Test if the project service is available.
+    '''
+    ac_project = AcWorkspace().get_project(project_name)
+    port = ac_project["port"]
+    url = f"http://localhost:{port}/"
+    result = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url])
+    if result.returncode != 0:
+        AcOutputManager.fail(f"failed to test project service availability.")
+    elif result.stdout != "200":
+        return False
+        #AcOutputManager.fail(f"project service not available. Response code: {result.stdout}")
+    else:
+        return True
+        #AcOutputManager.complete_step(f"project service available at {url}.")
+
 def compose_project(project_name, action="up", build=False, verbose=False):
     '''
     Compose the project using docker-compose.yml and docker-compose-dependencies.yml files.
@@ -48,6 +66,12 @@ def compose_project(project_name, action="up", build=False, verbose=False):
             AcOutputManager.complete_step(f"{'dependency' if compose_file == DOCKER_COMPOSE_DEPENDENCIES_FILE else 'project'} containers {'started' if action == 'up' else 'stopped'}.")
 
     AcOutputManager.complete_step(f"project {project_name} {'started' if action == 'up' else 'stopped'}.")
+
+    while True:
+        AcOutputManager.write("testing project service availability")
+        if test_project_service_available_with_status_200(project_name):
+            AcOutputManager.complete_step("project service available.")
+            break
 
 
 def initialize_project(project_name, verbose=False):

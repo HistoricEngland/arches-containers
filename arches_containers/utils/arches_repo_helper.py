@@ -37,4 +37,6 @@ def change_arches_branch(project_name, verbose=False):
         AcOutputManager.fail(f"Failed to checkout arches branch {branch}")
     
     if verbose:
-        AcOutputManager.complete_step(f"Changed arches repo branch to {branch}")
+        AcOutputManager.write(f"Changed arches repo branch to {branch}")
+
+    AcOutputManager.complete_step(f"Arches repo configured")
