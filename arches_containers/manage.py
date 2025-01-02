@@ -1,5 +1,6 @@
 import os
 import subprocess
+from time import sleep
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
 from arches_containers.utils.logger import AcOutputManager
@@ -63,12 +64,14 @@ def compose_project(project_name, action="up", build=False, verbose=False):
             AcOutputManager.complete_step(f"{'dependency' if compose_file == DOCKER_COMPOSE_DEPENDENCIES_FILE else 'project'} containers {'started' if action == 'up' else 'stopped'}.")
 
     AcOutputManager.complete_step(f"project {project_name} {'started' if action == 'up' else 'stopped'}.")
-
-    while True:
-        AcOutputManager.write("testing project service availability")
-        if test_project_service_available_with_status_200(project_name):
-            AcOutputManager.complete_step("project service available.")
-            break
+    if action == "up":
+        AcOutputManager.write("awaiting for project service availability")
+        AcOutputManager.write(" ℹ️ depending on your application this may take a while. Check container logs for detailed information.")
+        while True:
+            sleep(5)
+            if test_project_service_available_with_status_200(project_name):
+                AcOutputManager.complete_step("project service available.")
+                break
 
 
 def initialize_project(project_name, verbose=False):
