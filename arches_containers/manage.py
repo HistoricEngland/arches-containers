@@ -14,9 +14,10 @@ def test_project_service_available_with_status_200(project_name) -> bool:
     '''
     Test if the project service is available.
     '''
-    ac_project = AcWorkspace().get_project(project_name)
-    port = ac_project["port"]
-    url = f"http://localhost:{port}/"
+    ac_settings = AcWorkspace().get_settings()
+    host = ac_settings["host"]
+    port = ac_settings["port"]
+    url = f"http://{host}:{port}/"
     result = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url])
     if result.returncode != 0:
         AcOutputManager.fail(f"failed to test project service availability.")

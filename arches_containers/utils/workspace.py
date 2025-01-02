@@ -24,6 +24,8 @@ REPLACE_TOKEN_URLSAFE = "{{project_urlsafe}}"
 
 DEFAULT_AC_SETTINGS = {
     "active_project": "",
+    "host": "localhost",
+    "port": 8002,
 }
 
 # PUBLIC CLASSES
@@ -89,7 +91,18 @@ class AcSettings:
                 if os.stat(settings_path).st_size == 0:
                     return DEFAULT_AC_SETTINGS
                 
-                return json.load(settings_file)
+                # if any settigns are missing, add them
+                settings = json.load(settings_file)
+                missing_settings = False
+                for key in DEFAULT_AC_SETTINGS:
+                    if key not in settings:
+                        settings[key] = DEFAULT_AC_SETTINGS[key]
+                        missing_settings = True
+
+                if missing_settings:
+                    self.save_settings(settings)
+
+                return settings
         else:
             return DEFAULT_AC_SETTINGS
     
