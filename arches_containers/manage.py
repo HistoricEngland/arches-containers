@@ -18,15 +18,11 @@ def test_project_service_available_with_status_200(project_name) -> bool:
     host = ac_settings["host"]
     port = ac_settings["port"]
     url = f"http://{host}:{port}/"
-    result = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url])
-    if result.returncode != 0:
-        AcOutputManager.fail(f"failed to test project service availability.")
-    elif result.stdout != "200":
+    result = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}\n", url])
+    if result.returncode != 0 and result.stdout != "200":
         return False
-        #AcOutputManager.fail(f"project service not available. Response code: {result.stdout}")
     else:
         return True
-        #AcOutputManager.complete_step(f"project service available at {url}.")
 
 def compose_project(project_name, action="up", build=False, verbose=False):
     '''
