@@ -1,1 +1,1 @@
-AC_VERSION = "0.5.11"
+AC_VERSION = "0.5.12"
