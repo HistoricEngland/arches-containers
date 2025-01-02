@@ -19,7 +19,7 @@ def test_project_service_available_with_status_200(project_name) -> bool:
     host = ac_settings["host"]
     port = ac_settings["port"]
     url = f"http://{host}:{port}/"
-    result = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}\n", url])
+    result = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}\n", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if result.returncode != 0 and result.stdout != "200":
         return False
     else:
