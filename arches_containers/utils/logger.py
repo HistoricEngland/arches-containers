@@ -1,10 +1,63 @@
 import json
-from yaspin import yaspin
 from prettytable import PrettyTable
+
+from rich.console import Console
+from rich.spinner import Spinner as RichSpinner
+from rich.live import Live
+import arches_containers
+
+class _RichSpinner:
+    def __init__(self, text=""):
+        self.console = Console()
+        self.console.rule(f"Arches Containers CLI v{arches_containers.AC_VERSION}")
+        self.text = text
+        self._spinner = RichSpinner("dots", text=self.text)
+        self._live = None
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
+    def start(self, message=None):
+        if message:
+            self.text = message
+            self._spinner.text = message
+        self._live = Live(self._spinner, console=self.console, refresh_per_second=10, transient=True)
+        self._live.start()
+
+    def stop(self):
+        if self._live:
+            self._live.stop()
+            self._live = None
+
+    def write(self, message, style=None):
+        # Print immediately
+        self.console.print(message, style=style)
+        
+    def ok(self, text=""):
+        self.stop()
+        if text:
+            self.console.print(text)
+
+    def fail(self, text=""):
+        self.stop()
+        if text:
+            self.console.print(text)
+
+    @property
+    def text_attr(self):
+        return self._spinner.text
+
+    @text_attr.setter
+    def text_attr(self, value):
+        self._spinner.text = value
 
 class AcOutputManager(object):
     """
-    Coordinates and manages CLI messaging and using a yaspin spinner. It should be used as a context manager.
+    Coordinates and manages CLI messaging and using a (now rich-based) spinner. It should be used as a context manager.
 
     Example:
         with AcOutputManager("Starting...") as spinner: \n
@@ -30,7 +83,7 @@ class AcOutputManager(object):
         if not hasattr(cls, 'instance'):
             cls.instance = super(AcOutputManager, cls).__new__(cls)
             cls.start_text = text
-            cls.spinner = yaspin(text=cls.start_text)
+            cls.spinner = _RichSpinner(text=cls.start_text)
         return cls.instance
 
     def __enter__(self):
@@ -51,11 +104,14 @@ class AcOutputManager(object):
         AcOutputManager().spinner.stop()
 
     @staticmethod
-    def write(message):
+    def write(message, color=None):
         '''
-        Write a message to the spinner.
+        Write a message to the spinner, optionally specifying a color.
         '''
-        AcOutputManager().spinner.write(message)
+        if color:
+            AcOutputManager().spinner.write(message, style=color)
+        else:
+            AcOutputManager().spinner.write(message)
 
     @staticmethod
     def pretty_write_args(args):
@@ -76,7 +132,7 @@ class AcOutputManager(object):
         '''
         Change the leading text in the spinner.
         '''
-        AcOutputManager().spinner.text = message
+        AcOutputManager().spinner.text_attr = message
 
     @staticmethod
     def complete_step(message):
@@ -105,10 +161,8 @@ class AcOutputManager(object):
         Write a success message to the spinner and stop it.
         '''
         spinner_manager = AcOutputManager()
-        spinner_manager.spinner.write(f"🟢 {message}")
-        spinner_manager.spinner.text = spinner_manager.start_text
-        spinner_manager.spinner.ok("✅ 🏁 ")
-        spinner_manager.stop_spinner()
+        spinner_manager.write(f"🟢 {message}")
+        spinner_manager.spinner.ok("🏁")
 
     @staticmethod
     def fail(message):
@@ -116,10 +170,8 @@ class AcOutputManager(object):
         Write a failure message to the spinner and stop it. It will also exit the program with a status code of 1.
         '''
         spinner_manager = AcOutputManager()
-        spinner_manager.spinner.write(f"🔴 {message}")
-        spinner_manager.spinner.text = spinner_manager.start_text
-        spinner_manager.spinner.fail("❌ ")
-        spinner_manager.stop_spinner()
+        spinner_manager.write(f"🔴 {message}")
+        spinner_manager.spinner.fail("❌")
         exit(1)
 
 
