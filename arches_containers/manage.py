@@ -65,11 +65,13 @@ def compose_project(project_name, action="up", build=False, verbose=False):
 
     AcOutputManager.complete_step(f"project {project_name} {'started' if action == 'up' else 'stopped'}.")
     if action == "up":
-        AcOutputManager.write("awaiting for project service availability")
-        AcOutputManager.write(" ℹ️ depending on your application this may take a while. Check container logs for detailed information.")
+        AcOutputManager.text("awaiting project service availability")
+        AcOutputManager.write("... ℹ️ depending on your application configuration this may take a while.")
+        AcOutputManager.write("...    check container logs for detailed information.")
         while True:
             sleep(5)
             if test_project_service_available_with_status_200(project_name):
+                AcOutputManager.complete_step("awaiting project service availability")
                 AcOutputManager.complete_step("project service available.")
                 break
 
