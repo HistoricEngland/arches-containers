@@ -25,7 +25,11 @@ class _RichSpinner:
         if message:
             self.text = message
             self._spinner.text = message
-        self._live = Live(self._spinner, console=self.console, refresh_per_second=10, transient=True)
+        if not self._live:
+            self._live = Live(self._spinner, console=self.console, refresh_per_second=10, transient=True)
+        else:
+            self._live.update(self._spinner)
+        
         self._live.start()
 
     def stop(self):
@@ -144,7 +148,7 @@ class AcOutputManager(object):
     @staticmethod
     def skipped_step(message):
         '''
-        Write a skipped message to the spinner (🟠).
+        Write a skipped message to the spinner (🟡).
         '''
         AcOutputManager().spinner.write(f"🟡 {message}")
 
