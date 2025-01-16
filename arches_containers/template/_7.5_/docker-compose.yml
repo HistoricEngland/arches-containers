@@ -1,0 +1,90 @@
+
+services:
+    {{project_urlsafe}}:
+      container_name: {{project_urlsafe}}
+      image: he/{{project}}:dev_build
+      build:
+        args:
+          - "PROJ_NAME={{project}}"
+          - "DOCKER_PATH=./.arches_containers/{{project}}/docker"
+        context: ../..
+        dockerfile: ./.arches_containers/{{project}}/Dockerfile
+      command: run_arches
+      volumes:
+        - ../../arches:/web_root/arches
+        - ../../{{project}}:/web_root/{{project}}
+        - ./docker:/web_root/docker
+        - ../../{{project}}-package:/web_root/{{project}}_package
+        - ../../{{project}}-data:/web_root/{{project}}_data
+      env_file:
+        - ./docker/env_file.env
+      ports:
+        - 8002:8000
+        - 5678:5678
+      stdin_open: true
+      tty: true
+    
+    ## - possible 
+    #{{project_urlsafe}}-bash:
+    #  profiles:
+    #    - livereload
+    #  container_name: {{project_urlsafe}}-bash
+    #  image: he/{{project}}:dev_build
+    #  command: ["bash"]
+    #  volumes:
+    #    - ../../arches:/web_root/arches
+    #    - ../../{{project}}:/web_root/{{project}}
+    #    - ./docker:/web_root/docker
+    #    - ../../{{project}}-package:/web_root/{{project}}_package
+    #    - ../../{{project}}-data:/web_root/{{project}}_data
+    #  env_file:
+    #    - ./docker/env_file.env
+    #  ports:
+    #    - 35729:35729      
+    #  depends_on:
+    #      - {{project_urlsafe}}
+    #  stdin_open: true
+    #  tty: true
+
+    {{project_urlsafe}}-livereload:
+      profiles:
+        - livereload
+      container_name: {{project_urlsafe}}-livereload
+      image: he/{{project}}:dev_build
+      command: run_livereload
+      volumes:
+        - ../../arches:/web_root/arches
+        - ../../{{project}}:/web_root/{{project}}
+      env_file:
+        - ./docker/env_file.env
+      ports:
+        - 35729:35729      
+      depends_on:
+          - {{project_urlsafe}}
+      stdin_open: true
+      tty: true
+    
+    {{project_urlsafe}}-webpack:
+      container_name: {{project_urlsafe}}-webpack
+      image: he/{{project}}:dev_build
+      command: run_webpack
+      volumes:
+        - ../../arches:/web_root/arches
+        - ../../{{project}}:/web_root/{{project}}
+      env_file:
+        - ./docker/env_file.env
+      ports:
+        - 8028:8021
+      depends_on:
+          - {{project_urlsafe}}
+      stdin_open: true
+      tty: true
+
+networks:
+  default:
+    external: true
+    name: {{project_urlsafe}}-network
+
+volumes:
+    arches-log:
+    arches-static:
