@@ -172,14 +172,18 @@ class AcWorkspace:
         '''
         Returns the path to the directory containing the .arches-containers directory.
         
-        If it doesn't find one it'll create one in the current working directory.
+        If it doesn't find one having traversed to root, it'll create one in the current working directory.
         '''
         cwd = os.getcwd()
-        while cwd != "/":
+        while True:
             context = os.path.join(cwd, AC_DIRECTORY_NAME)
             if os.path.exists(context):
                 return cwd
-            cwd = os.path.dirname(cwd)
+            parent_dir = os.path.dirname(cwd)
+            if parent_dir == cwd or parent_dir == '/' or parent_dir.endswith(':\\'):
+                cwd = os.getcwd()
+                break
+            cwd = parent_dir
 
         context = os.path.join(os.getcwd(), AC_DIRECTORY_NAME)
         os.makedirs(context)
