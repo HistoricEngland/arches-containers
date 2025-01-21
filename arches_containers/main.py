@@ -1,6 +1,7 @@
 import argparse
 from rich_argparse import RichHelpFormatter
 import os
+import webbrowser
 from slugify import slugify
 from arches_containers import AC_VERSION as arches_containers_version
 from arches_containers.manage import compose_project, initialize_project, status
@@ -56,8 +57,11 @@ def main():
     # Sub-parser for the status command
     parser_status = subparsers.add_parser("status", help="Check container status", formatter_class=parser.formatter_class)
 
+    # Sub-parser for the view command
+    parser_view = subparsers.add_parser("view", help="View the active project in a web browser", formatter_class=parser.formatter_class)
     args = parser.parse_args()
     
+
     ac_workspace = AcWorkspace()
     ac_settings = ac_workspace.get_settings()
 
@@ -155,9 +159,18 @@ def main():
         with AcOutputManager("Checking active project container status") as spinner:
             AcOutputManager.write("▶️ Checking active project container status")
             status()
+
+    # ========================================================================================================
+    elif args.command == "view":
+        ac_settings = AcWorkspace().get_settings().settings
+        host = ac_settings["host"]
+        port = ac_settings["port"]
+        url = f"http://{host}:{port}/"
+        webbrowser.open(url)
+
+    # ========================================================================================================
     else:
         parser.print_help()
-
 
 if __name__ == "__main__":
     main()
