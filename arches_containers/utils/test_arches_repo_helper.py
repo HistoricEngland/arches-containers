@@ -1,7 +1,7 @@
+import os
 import pytest
 from unittest.mock import patch, MagicMock
 from arches_containers.utils.arches_repo_helper import _get_repo_info
-
 
 @pytest.fixture
 def mock_workspace():
@@ -29,13 +29,12 @@ def test_get_repo_info(mock_workspace, mock_project_settings):
     # Assert
     assert config == mock_config
     assert repo_url == "https://github.com/test_org/arches.git"
-    assert clone_dir == f"{mock_workspace_instance.path}/arches"
+    assert clone_dir == os.path.join(mock_workspace_instance.path, "arches")
     assert branch == "main"
     
 import unittest
 from unittest.mock import patch, MagicMock
 from arches_containers.utils.arches_repo_helper import _get_repo_info
-
 
 class TestArchesRepoHelper(unittest.TestCase):
 
@@ -57,8 +56,8 @@ class TestArchesRepoHelper(unittest.TestCase):
         # Assert
         self.assertEqual(config, mock_config)
         self.assertEqual(repo_url, "https://github.com/test_org/arches.git")
-        self.assertEqual(clone_dir, f"{mock_workspace.path}/arches")
+        self.assertEqual(clone_dir, os.path.join(mock_workspace.path, "arches"))
         self.assertEqual(branch, "main")
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     unittest.main()

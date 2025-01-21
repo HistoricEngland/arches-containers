@@ -8,7 +8,7 @@ def _get_repo_info(project_name):
     ac_project = ac_workspace.get_project(project_name)
     branch = ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value]
     repo_url = f"https://github.com/{ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value]}/arches.git"
-    clone_dir = f"{ac_workspace.path}/arches"
+    clone_dir = os.path.join(ac_workspace.path, "arches")
     return (ac_project, repo_url, clone_dir, branch)
 
 def clone_and_checkout_repo(project_name, verbose=False):
