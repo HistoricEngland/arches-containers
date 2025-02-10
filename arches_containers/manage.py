@@ -110,7 +110,7 @@ def initialize_project(project_name, verbose=False):
     AcOutputManager.complete_step("initialization complete.")
 
 def status():
-        ac_settings =AcWorkspace().get_settings()
+        ac_settings = AcWorkspace().get_settings()
         active_project = ac_settings.get_active_project()
         if not active_project:
             AcOutputManager.fail("No active project set. Run 'arches-containers activate' to set an active project.")
