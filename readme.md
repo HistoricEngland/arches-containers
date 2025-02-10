@@ -62,7 +62,7 @@ arches-containers [OPTIONS] COMMAND [ARGS]...
     This sets up the Arches repo, builds the development container, and creates the Arches project directory.
 
     ```sh
-    arches-containers manage init
+    arches-containers init
     ```
 
 1. Start the project:
@@ -70,7 +70,7 @@ arches-containers [OPTIONS] COMMAND [ARGS]...
     This starts the containers and the Arches development server.
 
     ```sh
-    arches-containers manage up
+    arches-containers up
     ```
 
 1. Open a browser and navigate to `http://localhost:8002` once setup and webpack builds are complete.
@@ -89,20 +89,50 @@ arches-containers create -p <project_name> -v <version> [-o <organization>] [--a
 - `-o`, `--organization`: The GitHub organization of the Arches repo (default: archesproject).
 - `--activate`: Activate the project after creation. If it is the first project then it will be activated by default.
 
-### Manage a Project
+### Managing Projects
 
-Steps to manage an existing container project.
+The following commands are available for managing projects:
+
+#### Start a Project
 
 ```sh
 cd /path/to/workspace
-arches-containers manage -p <project_name> [-b] [-o <organization>] [-br <branch>] <action>
+arches-containers up [-p <project_name>] [-b] [-vb]
 ```
 
 - `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
 - `-b`, `--build`: Rebuild containers when composing up.
-- `-o`, `--organization`: The GitHub organization of the Arches repo (default: archesproject).
-- `-br`, `--branch`: The branch of the Arches repo to use. Default is the 'dev/[version].x' branch.
-- `<action>`: Action to perform: 'up' to start the project, 'down' to stop the project, 'init' to initialize the project, 'activate' to set the project as the active project.
+- `-vb`, `--verbose`: Print verbose output during the compose processes.
+
+#### Stop a Project
+
+```sh
+cd /path/to/workspace
+arches-containers down [-p <project_name>] [-vb]
+```
+
+- `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
+- `-vb`, `--verbose`: Print verbose output during the compose processes.
+
+#### Initialize a Project
+
+```sh
+cd /path/to/workspace
+arches-containers init [-p <project_name>] [-vb]
+```
+
+- `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
+- `-vb`, `--verbose`: Print verbose output during the compose processes.
+
+#### Activate a Project
+
+```sh
+cd /path/to/workspace
+arches-containers activate -p <project_name> [-vb]
+```
+
+- `-p`, `--project_name`: The name of the project to activate.
+- `-vb`, `--verbose`: Print verbose output during the compose processes.
 
 ### List Projects
 

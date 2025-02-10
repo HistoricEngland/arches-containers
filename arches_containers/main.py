@@ -24,16 +24,27 @@ def main():
     parser_create.add_argument("-br", "--branch", help="The branch of the arches repo to use. Default is the 'dev/<version>.x' branch.")
     parser_create.add_argument("--activate", action="store_true", help="Activate the project after creation.")
     
-    
-    # Sub-parser for the manage command
-    parser_manage = subparsers.add_parser("manage", help="Manage an existing container project", formatter_class=parser.formatter_class)
-    parser_manage.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
-    parser_manage.add_argument("-b", "--build", action="store_true", help="Rebuild containers when composing up")
-    parser_manage.add_argument("-o", "--organization", default="archesproject", help="The GitHub organization of the arches repo (default: archesproject)")
-    parser_manage.add_argument("-br", "--branch", help="The branch of the arches repo to use. Default is the 'dev/<version>.x' branch.")
-    parser_manage.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
-    parser_manage.add_argument("action", choices=["up", "down", "init", "activate"], help="Action to perform: 'up' to start the project, 'down' to stop the project, 'init' to initialize the project, 'activate' to set the project as the active project")
-    
+    # Sub-parser for starting containers
+    parser_up = subparsers.add_parser("up", help="Start the project containers", formatter_class=parser.formatter_class)
+    parser_up.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
+    parser_up.add_argument("-b", "--build", action="store_true", help="Rebuild containers when composing up")
+    parser_up.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
+
+    # Sub-parser for stopping containers
+    parser_down = subparsers.add_parser("down", help="Stop the project containers", formatter_class=parser.formatter_class)
+    parser_down.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
+    parser_down.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
+
+    # Sub-parser for initializing project
+    parser_init = subparsers.add_parser("init", help="Initialize the project", formatter_class=parser.formatter_class)
+    parser_init.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
+    parser_init.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
+
+    # Sub-parser for activating project
+    parser_activate = subparsers.add_parser("activate", help="Set a project as the active project", formatter_class=parser.formatter_class)
+    parser_activate.add_argument("-p", "--project_name", required=True, help="The name of the project to activate")
+    parser_activate.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
+
     # Sub-parser for the list command
     parser_list = subparsers.add_parser("list", help="List all container projects", formatter_class=parser.formatter_class)
     
@@ -75,38 +86,38 @@ def main():
             if args.activate:
                 ac_settings.set_active_project(project.project_name)
     # ========================================================================================================
-    elif args.command == "manage":
-        if args.project_name == "":
+    elif args.command in ["up", "down", "init", "activate"]:
+        if args.project_name == "" and args.command != "activate":
             try:
                 args.project_name = ac_settings.get_active_project().project_name
             except Exception as e:
                 AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
 
-        with AcOutputManager(f"Managing project: {args.project_name}") as spinner:
-            AcOutputManager.write(f"▶️ Managing project: {args.project_name}")
+        with AcOutputManager(f"Running {args.command} command for project: {args.project_name}") as spinner:
+            AcOutputManager.write(f"▶️ {args.command.capitalize()} command for project: {args.project_name}")
             
-            ac_project = ac_workspace.get_project(args.project_name)
-            if args.organization:
-                ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
-            if args.branch:
-                ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
-            ac_project.save()
+            if hasattr(args, 'organization') or hasattr(args, 'branch'):
+                ac_project = ac_workspace.get_project(args.project_name)
+                if hasattr(args, 'organization') and args.organization:
+                    ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
+                if hasattr(args, 'branch') and args.branch:
+                    ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
+                ac_project.save()
 
-            if args.verbose:
+            if hasattr(args, 'verbose') and args.verbose:
                 AcOutputManager.pretty_write_args(vars(args))
 
-            if args.action == "activate":
+            if args.command == "activate":
                 ac_settings.set_active_project(args.project_name)
                 arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
                 AcOutputManager.completed_step(f"Project '{args.project_name}' set as active.")
-
             
-            if args.action == "init":
+            elif args.command == "init":
                 arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
                 initialize_project(args.project_name, args.verbose)
             else:
                 arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
-                compose_project(args.project_name, args.action, args.build, args.verbose)
+                compose_project(args.project_name, args.command, getattr(args, 'build', False), args.verbose)
 
     # ========================================================================================================
     elif args.command == "list":
