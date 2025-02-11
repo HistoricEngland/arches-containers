@@ -110,7 +110,7 @@ def main():
             if args.command == "activate":
                 ac_settings.set_active_project(args.project_name)
                 arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
-                AcOutputManager.completed_step(f"Project '{args.project_name}' set as active.")
+                AcOutputManager.complete_step(f"Project '{args.project_name}' set as active.")
             
             elif args.command == "init":
                 arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
