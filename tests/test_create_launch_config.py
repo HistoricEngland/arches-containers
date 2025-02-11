@@ -2,7 +2,7 @@ import os
 import json
 import pytest
 from unittest.mock import patch, mock_open, MagicMock
-from .create_launch_config import create_launch_config
+from arches_containers.utils.create_launch_config import create_launch_config
 
 @pytest.fixture
 def mock_workspace():

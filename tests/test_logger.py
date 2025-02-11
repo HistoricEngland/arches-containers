@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from .logger import AcOutputManager
+from arches_containers.utils.logger import AcOutputManager
 
 # test_logger.py
 
@@ -55,7 +55,7 @@ def test_failed_step_prints_correct_prefix(mock_spinner, spinner_setup):
 def test_success_stops_spinner_with_ok(mock_spinner):
     AcOutputManager.success("All good.")
     mock_spinner.return_value.write.assert_called_with("🟢 All good.")
-    mock_spinner.return_value.ok.assert_called_once_with("🏁")
+    mock_spinner.return_value.ok.assert_called_once_with("🏁 Finished successfully")
 
 def test_stop_spinner_calls_spinner_stop(mock_spinner):
     AcOutputManager.stop_spinner()
@@ -69,5 +69,5 @@ def test_start_spinner_calls_spinner_start(mock_spinner):
 def test_fail_stops_spinner_and_exits(mock_spinner):
     AcOutputManager.fail("Error occurred.")
     mock_spinner.return_value.write.assert_called_with("🔴 Error occurred.")
-    mock_spinner.return_value.fail.assert_called_once_with("❌")
+    mock_spinner.return_value.fail.assert_called_once_with("❌ Finished with errors")
     # exit(1) was called as well
