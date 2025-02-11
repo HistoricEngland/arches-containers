@@ -166,7 +166,7 @@ class AcOutputManager(object):
         '''
         spinner_manager = AcOutputManager()
         spinner_manager.write(f"🟢 {message}")
-        spinner_manager.spinner.ok("🏁")
+        spinner_manager.spinner.ok("🏁 Finished successfully")
 
     @staticmethod
     def fail(message):
@@ -175,7 +175,7 @@ class AcOutputManager(object):
         '''
         spinner_manager = AcOutputManager()
         spinner_manager.write(f"🔴 {message}")
-        spinner_manager.spinner.fail("❌")
+        spinner_manager.spinner.fail("❌ Finished with errors")
         exit(1)
 
 
