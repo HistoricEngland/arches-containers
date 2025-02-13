@@ -36,13 +36,15 @@ source env/bin/activate  # On Windows use `env\Scripts\activate`
 
 ## Usage
 
-Use the `arches-containers` command to manage arches-container projects.
+Use the `arches-containers` or shorthand `act` command to manage arches-container projects.
+
+The following examples use the `act` command. Replace `act` with `arches-containers` if you prefer to use the full command.
 
 > ⚠️ **arches-containers** will create a `.arches-containers` folder in the workspace directory to store project configurations. It will look for this up the file tree when running commands. Should there be another `.arches-containers` folder in the workspace directory, the CLI may not work as expected.
 
 ```sh
 cd /path/to/workspace
-arches-containers [OPTIONS] COMMAND [ARGS]...
+act [OPTIONS] COMMAND [ARGS]...
 ```
 
 > Note: The command is aliased as `act` for convenience (**a**rches-**c**ontainer **t**ool).
@@ -54,7 +56,7 @@ arches-containers [OPTIONS] COMMAND [ARGS]...
     This creates the arches-container project configuration and sets it as the active project.
 
     ```sh
-    arches-containers create -p my_project -v 7.5 --activate
+    act create -p my_project -v 7.5 --activate
     ```
 
 1. Initialize the project:
@@ -62,7 +64,7 @@ arches-containers [OPTIONS] COMMAND [ARGS]...
     This sets up the Arches repo, builds the development container, and creates the Arches project directory.
 
     ```sh
-    arches-containers init
+    act init
     ```
 
 1. Start the project:
@@ -70,7 +72,7 @@ arches-containers [OPTIONS] COMMAND [ARGS]...
     This starts the containers and the Arches development server.
 
     ```sh
-    arches-containers up
+    act up
     ```
 
 1. Open a browser and navigate to `http://localhost:8002` once setup and webpack builds are complete.
@@ -81,7 +83,7 @@ Steps to create a new container project.
 
 ```sh
 cd /path/to/workspace
-arches-containers create -p <project_name> -v <version> [-o <organization>] [--activate]
+act create -p <project_name> -v <version> [-o <organization>] [--activate]
 ```
 
 - `-p`, `--project_name`: The name of the project. This value will be slugified to lowercase with underscore separators.
@@ -97,7 +99,7 @@ The following commands are available for managing projects:
 
 ```sh
 cd /path/to/workspace
-arches-containers up [-p <project_name>] [-b] [-vb]
+act up [-p <project_name>] [-b] [-vb]
 ```
 
 - `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
@@ -108,7 +110,7 @@ arches-containers up [-p <project_name>] [-b] [-vb]
 
 ```sh
 cd /path/to/workspace
-arches-containers down [-p <project_name>] [-vb]
+act down [-p <project_name>] [-vb]
 ```
 
 - `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
@@ -118,7 +120,7 @@ arches-containers down [-p <project_name>] [-vb]
 
 ```sh
 cd /path/to/workspace
-arches-containers init [-p <project_name>] [-vb]
+act init [-p <project_name>] [-vb]
 ```
 
 - `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
@@ -128,7 +130,7 @@ arches-containers init [-p <project_name>] [-vb]
 
 ```sh
 cd /path/to/workspace
-arches-containers activate -p <project_name> [-vb]
+act activate -p <project_name> [-vb]
 ```
 
 - `-p`, `--project_name`: The name of the project to activate.
@@ -140,7 +142,7 @@ Steps to list all container projects.
 
 ```sh
 cd /path/to/workspace
-arches-containers list
+act list
 ```
 
 ### Delete a Project
@@ -149,7 +151,7 @@ Steps to delete an existing container project.
 
 ```sh
 cd /path/to/workspace
-arches-containers delete -p <project_name>
+act delete -p <project_name>
 ```
 
 - `-p`, `--project_name`: The name of the project to delete.
@@ -160,7 +162,7 @@ Steps to generate a VSCode launch.json configuration for the workspace.
 
 ```sh
 cd /path/to/workspace
-arches-containers generate-debug-config
+act generate-debug-config
 ```
 
 ### Export a Project
@@ -173,7 +175,7 @@ The docker compose files in the exported arches-container project will need to b
 
 ```sh
 cd /path/to/workspace
-arches-containers export [-p <project_name>] [-r <repo_path>]
+act export [-p <project_name>] [-r <repo_path>]
 ```
 
 - `-p`, `--project_name`: The name of the project to export. Default is the active project.
@@ -184,7 +186,7 @@ arches-containers export [-p <project_name>] [-r <repo_path>]
 The user can import an arches-container project from a repository folder. This is useful when the user wants to use a project that has been shared with them or stored in a version control system.
 
 ```sh
-arches-containers import -p <project_name> [-r <repo_path>]
+act import -p <project_name> [-r <repo_path>]
 ```
 
 - `-p`, `--project_name`: The name of the project to import. It will look for a folder at the path  in the repository folder.
@@ -207,14 +209,14 @@ To import `project1`:
 
 ```sh
 cd /path/to/workspace
-arches-containers import -p project1
+act import -p project1
 ```
 
 To import `project2`:
 
 ```sh
 cd /path/to/workspace
-arches-containers import -p project2 -r ./a_different_repo
+act import -p project2 -r ./a_different_repo
 ```
 
 ### Check Container Status
@@ -223,7 +225,16 @@ Steps to check container status of the active project.
 
 ```sh
 cd /path/to/workspace
-arches-containers status
+act status
+```
+
+### Quickly open the application in a browser
+
+Steps to open the application in a browser.
+
+```sh
+cd /path/to/workspace
+act view
 ```
 
 ## Configuration of the Project
