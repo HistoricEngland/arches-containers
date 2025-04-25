@@ -4,13 +4,15 @@
 
 Arches Containers is a developer CLI tool to create and manage containerized Arches development environments. See [Arches](https://github.com/archesproject/arches) project for information related to the framework.
 
-It provides commands to create and manage arches-container projects, which contain the necessary configuration files to run Arches in a containerized environment, complete with required minimum dependencies and services.
+It is not an official Arches Project tool, but a community project to help developers get started with Arches development.
+
+It provides commands to create and manage arches-container projects, which contain the necessary configuration files to run Arches in a containerized environment for development, complete with required minimum dependencies and services.
 
 > ⚠️ **It is not yet configured to build an image to be deployed to a hosted environment. The ability to create a basic deployable image is in the Roadmap.**
 
 These arches-container projects can be shared with others or stored in a version control system. They can be exported to a repository folder and imported back into the workspace.
 
-It can also be used to generate VSCode debug configurations to allow debugging code insode the containers.
+It can also be used to generate VSCode debug configurations to allow debugging code inside the containers.
 
 ## Installation
 
@@ -262,6 +264,15 @@ When in the project directory, there are two files that you may want to configur
 
    > ROADMAP - We'll look to provide a way to manage settings_local.py synchronisation in the future as part of the `manage up/down` commands.
 
+## Testing
+
+The project uses [pytest](https://docs.pytest.org/en/latest/) for testing. To run the tests, use the following command:
+
+```sh
+cd /path/to/arches-containers
+pytest
+```
+
 ## Build from source and publish
 
 1. Clone the repository:
@@ -334,7 +345,7 @@ While we work out the contribution guyideline, the following steps can be follow
 
 1. Fork the repository and create your branch from `main`.
 1. Raise a ticket with details of the enhancement or bug being fixed.
-1. Write or update tests as necessary.
+1. Write or update tests as necessary. Please ensure that all tests pass before submitting a pull request.
 1. Submit a pull request with a clear description of the changes.
 
 ## License
