@@ -1,0 +1,21 @@
+
+services:
+    {{project_urlsafe}}:
+      container_name: {{project_urlsafe}}
+      image: he/{{project}}:dev_build
+      build:
+        args:
+          - "PROJ_NAME={{project}}"
+          - "DOCKER_PATH=./.arches_containers/{{project}}/docker"
+        context: ../..
+        dockerfile: ./.arches_containers/{{project}}/Dockerfile
+      command: create_project
+      volumes:
+        - ../..:/web_root
+      env_file:
+        - ./docker/env_file.env
+      ports:
+        - 8002:8000
+        - 5678:5678
+      stdin_open: true
+      tty: true
