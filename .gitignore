@@ -3,6 +3,20 @@
 .VENV
 .ENV
 
-projects/
-
 .DS_Store
+__pycache__
+pyc
+*.log
+.vscode/
+*.egg-info
+CACHE
+.tsconfig-paths.json
+.frontend-configuration-settings.json
+.pytest_*
+
+# Ignore build artifacts
+dist/
+*.egg-info/
+build/
+*.whl
+*.tar.gz
