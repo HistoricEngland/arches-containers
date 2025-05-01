@@ -1,4 +1,4 @@
-import os
+import os, sys
 import subprocess
 from time import sleep
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject
@@ -106,6 +106,21 @@ def initialize_project(project_name, verbose=False):
             result = subprocess.run(["docker", "compose", "-f", compose_file_path, "down"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
             AcOutputManager.fail("failed to build the development image during initialisation.")
+
+    # now that the docker compose process has created the project directory, we can run the pre-commit install in the directory. make sure the virtualenv is activated.
+    os.chdir(project_path)
+    
+    # Check if the directory is a git repository before attempting to install pre-commit
+    git_check = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if git_check.returncode == 0:
+        # Directory is a git repository, install pre-commit
+        result = subprocess.run([sys.executable, "-m", "pre_commit", "install"])
+        if result.returncode != 0:
+            AcOutputManager.fail("failed to run pre-commit install.")
+        else:
+            AcOutputManager.complete_step("pre-commit install complete.")
+    else:
+        AcOutputManager.write("... ℹ️ skipping pre-commit install - not a git repository.")
 
     AcOutputManager.complete_step("initialization complete.")
 
