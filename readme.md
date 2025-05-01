@@ -241,7 +241,7 @@ act view
 
 ## Configuration of the Project
 
-The project is stored in a directory called `<workspace_path>/.arches-containers/<project_name>` and is compromised of a config file and a variety of files used with docker compose to stand up and environment.
+The project is stored in a directory called `<workspace_path>/.arches-containers/<project_name>` (the **project path**)and is compromised of a config file and a variety of files used with docker compose to stand up and environment.
 
 The project configuration file `config.json` is used to store default values for the CLI commands when the project is activated.
 
@@ -259,10 +259,10 @@ The project configuration file `config.json` is used to store default values for
 
 When in the project directory, there are two files that you may want to configure:
 
-- `<project_path>/docker/env_file.env`: This file contains environment variables that are used by the docker-compose files. You can add or remove variables as needed.
-- `<project_path>/docker/settings_local.py`: This file is copied into the arches project when the container is started. If you need to set specific development environment settings, do it here. Note that if you change the settings_local.py file copied to the your arches project directory, it will be overwritten when the container is next stopped/started/restarted, so you should always change it in the `<project_path>/docker/settings_local.py` file.
+- `<project path>/docker/env_file.env`: This file contains environment variables that are used by the docker-compose files. You can add or remove variables as needed.
+- `<project path>/docker/settings_local.py`: This file is copied into the arches project when the container is started. If you need to set specific development environment settings, do it here. Note that if you change the settings_local.py file copied to the your arches project directory, it will be overwritten when the container is next stopped/started/restarted, so you should always change it in the `<project path>/docker/settings_local.py` file.
 
-   > ROADMAP - We'll look to provide a way to manage settings_local.py synchronisation in the future as part of the `manage up/down` commands.
+   > ROADMAP - We'll look to provide a way to manage settings_local.py synchronisation in the future as part of the `up` and `down` commands.
 
 ## Testing
 
@@ -273,63 +273,40 @@ cd /path/to/arches-containers
 pytest
 ```
 
-## Build from source and publish
+## Publishing
 
-1. Clone the repository:
+Publishing to PyPI and TestPyPI is handled by GitHub Actions triggered on a release (to PyPI) or a merge into the `testpypi` branch (to TestPyPI).
 
-    ```sh
-    cd /path/to/workspace
-    git clone https://github.com/HistoricEngland/arches-containers.git
-    cd arches-containers
-    ```
+### Version Numbering
 
-1. Install the package:
+Ensure the version number is updated in both pyproject.toml and the `arches_containers/__init__.py` file before triggering either action:
 
-    ```sh
-    cd /path/to/arches-containers # where the pyproject.toml file is located
-    pip install .[dev] 
-    ```
+- **For PyPI releases** (triggered by GitHub release):
+  - Final release: `1.2.0`
+  - Release candidate: `1.2.0rc1`
 
-   > The `[dev]` option installs the developer dependencies. Some terminals may not support this syntax and you'll need to use quotes instead: `pip install '.[dev]'`.
+- **For TestPyPI releases** (triggered by merge to `testpypi` branch):
+  - Development release: `1.2.0.dev1`
+  - Alpha release: `1.2.0a1`
+  - Beta release: `1.2.0b1`
 
-1. To build the package, run the following command:
+### Development Status Classifier
 
-   > ℹ: Documentation on how to build and publish to PyPI can be found [here](https://packaging.python.org/en/latest/guides/section-build-and-publish/).
+Also update the Development Status classifier in pyproject.toml to match your release type:
 
-   ```sh
-   cd /path/to/arches-containers # where the pyproject.toml file is located
-   python -m build
-   ```
+- **For PyPI releases**:
+  ```
+  "Development Status :: 5 - Production/Stable"  # For final releases
+  "Development Status :: 4 - Beta"               # For release candidates
+  ```
 
-   This will create a `dist` folder with the built package.
+- **For TestPyPI releases**:
+  ```
+  "Development Status :: 3 - Alpha"              # For alpha/development releases
+  "Development Status :: 4 - Beta"               # For beta releases
+  ```
 
-   The instuctions for publishing us [twine](https://twine.readthedocs.io/en/stable/) to upload the package to PyPI. It expects that you have a configured [`.pypirc`](https://packaging.python.org/en/latest/specifications/pypirc/) to hold your PyPI API token credentials. The file should look like this:
-
-   > ⚠️ **Do not commit this file to source control.**
-
-   ```ini
-   [pypi]
-   username = __token__
-   password = <API token>
-   
-   [testpypi]
-   username = __token__
-   password =  <API token>
-   ```
-
-1. Run the following command to upload the package:
-
-   ```sh
-   cd /path/to/arches-containers # where the pyproject.toml file is located
-   twine upload dist/*
-   ```
-
-   For testing, you can upload to the test PyPI server by specifying the repository:
-
-   ```sh
-   cd /path/to/arches-containers # where the pyproject.toml file is located
-   twine upload --repository testpypi dist/*
-   ```
+This ensures that both the version number and the development status accurately reflect the maturity of your release.
 
 ## Contributing
 
