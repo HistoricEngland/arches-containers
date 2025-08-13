@@ -24,6 +24,7 @@ def main():
     parser_create.add_argument("-br", "--branch", help="The branch of the arches repo to use. Default is the 'dev/<version>.x' branch.")
     parser_create.add_argument("--activate", action="store_true", help="Activate the project after creation.")
     
+
     # Sub-parser for starting containers
     parser_up = subparsers.add_parser("up", help="Start the project containers", formatter_class=parser.formatter_class)
     parser_up.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
@@ -34,6 +35,12 @@ def main():
     parser_down = subparsers.add_parser("down", help="Stop the project containers", formatter_class=parser.formatter_class)
     parser_down.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
     parser_down.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
+
+    # Sub-parser for restarting containers
+    parser_restart = subparsers.add_parser("restart", help="Restart the project containers (down + up)", formatter_class=parser.formatter_class)
+    parser_restart.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
+    parser_restart.add_argument("-b", "--build", action="store_true", help="Rebuild containers when composing up")
+    parser_restart.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
 
     # Sub-parser for initializing project
     parser_init = subparsers.add_parser("init", help="Initialize the project", formatter_class=parser.formatter_class)
@@ -86,7 +93,7 @@ def main():
             if args.activate:
                 ac_settings.set_active_project(project.project_name)
     # ========================================================================================================
-    elif args.command in ["up", "down", "init", "activate"]:
+    elif args.command in ["up", "down", "init", "activate", "restart"]:
         if args.project_name == "" and args.command != "activate":
             try:
                 args.project_name = ac_settings.get_active_project().project_name
@@ -111,10 +118,15 @@ def main():
                 ac_settings.set_active_project(args.project_name)
                 arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
                 AcOutputManager.complete_step(f"Project '{args.project_name}' set as active.")
-            
             elif args.command == "init":
                 arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
                 initialize_project(args.project_name, args.verbose)
+            elif args.command == "restart":
+                arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
+                # First bring containers down
+                compose_project(args.project_name, "down", False, args.verbose)
+                # Then bring them up, with build if requested
+                compose_project(args.project_name, "up", getattr(args, 'build', False), args.verbose)
             else:
                 arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
                 compose_project(args.project_name, args.command, getattr(args, 'build', False), args.verbose)
