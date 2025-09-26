@@ -37,3 +37,53 @@ def test_restart_with_build_and_verbose():
         assert mock_compose.call_count == 2
         assert mock_compose.call_args_list[0][0][2] is False  # build for down
         assert mock_compose.call_args_list[1][0][2] is True   # build for up
+
+def test_restart_with_app_flag():
+    with patch("arches_containers.main.compose_project") as mock_compose, \
+         patch("arches_containers.main.arches_repo_helper.change_arches_branch") as mock_branch, \
+         patch("arches_containers.main.AcWorkspace") as mock_workspace, \
+         patch("arches_containers.main.AcOutputManager"):
+        mock_settings = mock_workspace.return_value.get_settings.return_value
+        mock_settings.get_active_project.return_value.project_name = "demo"
+        run_cli(["restart", "-p", "demo", "--app"])
+        # Should call down then up with app container type
+        assert mock_compose.call_count == 2
+        assert mock_compose.call_args_list[0][0][4] == "app"  # container_type for down
+        assert mock_compose.call_args_list[1][0][4] == "app"  # container_type for up
+
+def test_restart_with_dep_flag():
+    with patch("arches_containers.main.compose_project") as mock_compose, \
+         patch("arches_containers.main.arches_repo_helper.change_arches_branch") as mock_branch, \
+         patch("arches_containers.main.AcWorkspace") as mock_workspace, \
+         patch("arches_containers.main.AcOutputManager"):
+        mock_settings = mock_workspace.return_value.get_settings.return_value
+        mock_settings.get_active_project.return_value.project_name = "demo"
+        run_cli(["restart", "-p", "demo", "--dep"])
+        # Should call down then up with dep container type
+        assert mock_compose.call_count == 2
+        assert mock_compose.call_args_list[0][0][4] == "dep"  # container_type for down
+        assert mock_compose.call_args_list[1][0][4] == "dep"  # container_type for up
+
+def test_up_with_app_flag():
+    with patch("arches_containers.main.compose_project") as mock_compose, \
+         patch("arches_containers.main.arches_repo_helper.change_arches_branch") as mock_branch, \
+         patch("arches_containers.main.AcWorkspace") as mock_workspace, \
+         patch("arches_containers.main.AcOutputManager"):
+        mock_settings = mock_workspace.return_value.get_settings.return_value
+        mock_settings.get_active_project.return_value.project_name = "demo"
+        run_cli(["up", "-p", "demo", "--app"])
+        # Should call up with app container type
+        assert mock_compose.call_count == 1
+        assert mock_compose.call_args_list[0][0][4] == "app"  # container_type
+
+def test_down_with_dep_flag():
+    with patch("arches_containers.main.compose_project") as mock_compose, \
+         patch("arches_containers.main.arches_repo_helper.change_arches_branch") as mock_branch, \
+         patch("arches_containers.main.AcWorkspace") as mock_workspace, \
+         patch("arches_containers.main.AcOutputManager"):
+        mock_settings = mock_workspace.return_value.get_settings.return_value
+        mock_settings.get_active_project.return_value.project_name = "demo"
+        run_cli(["down", "-p", "demo", "--dep"])
+        # Should call down with dep container type
+        assert mock_compose.call_count == 1
+        assert mock_compose.call_args_list[0][0][4] == "dep"  # container_type

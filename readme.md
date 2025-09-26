@@ -102,22 +102,26 @@ The following commands are available for managing projects:
 
 ```sh
 cd /path/to/workspace
-act up [-p <project_name>] [-b] [-vb]
+act up [-p <project_name>] [-b] [-vb] [--app | --dep]
 ```
 
 - `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
 - `-b`, `--build`: Rebuild containers when composing up.
 - `-vb`, `--verbose`: Print verbose output during the compose processes.
+- `--app`: Only operate on application containers (docker-compose.yml). Mutually exclusive with --dep.
+- `--dep`: Only operate on dependency containers (docker-compose-dependencies.yml). Mutually exclusive with --app.
 
 #### Stop a Project
 
 ```sh
 cd /path/to/workspace
-act down [-p <project_name>] [-vb]
+act down [-p <project_name>] [-vb] [--app | --dep]
 ```
 
 - `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
 - `-vb`, `--verbose`: Print verbose output during the compose processes.
+- `--app`: Only operate on application containers (docker-compose.yml). Mutually exclusive with --dep.
+- `--dep`: Only operate on dependency containers (docker-compose-dependencies.yml). Mutually exclusive with --app.
 
 #### Restart a Project
 
@@ -125,12 +129,14 @@ Restarts the project containers by stopping and then starting them. Useful for a
 
 ```sh
 cd /path/to/workspace
-act restart [-p <project_name>] [-b] [-vb]
+act restart [-p <project_name>] [-b] [-vb] [--app | --dep]
 ```
 
 - `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
 - `-b`, `--build`: Rebuild containers when composing up (after stopping them).
 - `-vb`, `--verbose`: Print verbose output during the compose processes.
+- `--app`: Only operate on application containers (docker-compose.yml). Mutually exclusive with --dep.
+- `--dep`: Only operate on dependency containers (docker-compose-dependencies.yml). Mutually exclusive with --app.
 
 **Examples:**
 
@@ -144,6 +150,18 @@ Restart with verbose output:
 
 ```sh
 act restart -b -vb
+```
+
+Restart only application containers:
+
+```sh
+act restart --app
+```
+
+Restart only dependency containers with rebuild:
+
+```sh
+act restart --dep -b
 ```
 
 #### Initialize a Project
