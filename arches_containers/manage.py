@@ -25,16 +25,29 @@ def test_project_service_available_with_status_200(project_name) -> bool:
     else:
         return True
 
-def compose_project(project_name, action="up", build=False, verbose=False):
+def compose_project(project_name, action="up", build=False, verbose=False, container_type="both"):
     '''
     Compose the project using docker-compose.yml and docker-compose-dependencies.yml files.
+    container_type can be 'both', 'app', or 'dep' to control which containers are affected.
     '''
-    AcOutputManager.text(f"{'starting' if action == 'up' else 'stopping'} project")
+    container_desc = {
+        "both": "project",
+        "app": "application",
+        "dep": "dependency"
+    }
+    AcOutputManager.text(f"{'starting' if action == 'up' else 'stopping'} {container_desc[container_type]} containers")
     project = AcWorkspace().get_project(project_name)
     project_path = project.get_project_path()    
-    compose_files = [DOCKER_COMPOSE_DEPENDENCIES_FILE, DOCKER_COMPOSE_FILE]
-    if action == "down":
-        compose_files.reverse()
+    
+    # Select compose files based on container_type
+    if container_type == "app":
+        compose_files = [DOCKER_COMPOSE_FILE]
+    elif container_type == "dep":
+        compose_files = [DOCKER_COMPOSE_DEPENDENCIES_FILE]
+    else:  # container_type == "both"
+        compose_files = [DOCKER_COMPOSE_DEPENDENCIES_FILE, DOCKER_COMPOSE_FILE]
+        if action == "down":
+            compose_files.reverse()
     
     for compose_file in compose_files:
         compose_file_path = os.path.join(project_path, compose_file)
@@ -63,8 +76,8 @@ def compose_project(project_name, action="up", build=False, verbose=False):
         else:
             AcOutputManager.complete_step(f"{'dependency' if compose_file == DOCKER_COMPOSE_DEPENDENCIES_FILE else 'project'} containers {'started' if action == 'up' else 'stopped'}.")
 
-    AcOutputManager.complete_step(f"project {project_name} {'started' if action == 'up' else 'stopped'}.")
-    if action == "up":
+    AcOutputManager.complete_step(f"{container_desc[container_type]} containers for project {project_name} {'started' if action == 'up' else 'stopped'}.")
+    if action == "up" and container_type in ["both", "app"]:
         AcOutputManager.text("awaiting project service availability")
         AcOutputManager.write("... ℹ️ depending on your application configuration this may take a while.")
         AcOutputManager.write("...    check container logs for detailed information.")
