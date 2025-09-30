@@ -1,3 +1,5 @@
+import platform
+import re
 import os, json, sys
 import shutil
 
@@ -16,6 +18,28 @@ def _get_ac_module_path():
     Returns the path to the arches-containers python module. Used to locate the template directory.
     '''
     return os.path.dirname(arches_containers.__file__)
+
+def _adjust_platform_lines(target_path, uncomment: bool):
+    """
+    Adjusts platform lines in docker-compose files.
+    If uncomment=True, uncomment '#platform: linux/arm64'
+    If uncomment=False, comment 'platform: linux/arm64'
+    """
+    for root, dirs, files in os.walk(target_path):
+        for file in files:
+            if file.endswith(".yml") or file.endswith(".yaml"):
+                file_path = os.path.join(root, file)
+                with open(file_path, "r") as f:
+                    content = f.read()
+                if uncomment:
+                    # Remove only the first '#' (and any following space) before 'platform: linux/arm64', preserving indentation
+                    new_content = re.sub(r'^(\s*)#(\s*)(platform:\s*linux/arm64)', r'\1\3', content, flags=re.MULTILINE)
+                else:
+                    # Add a '#' before 'platform: linux/arm64' if not already commented, preserving indentation
+                    new_content = re.sub(r'^(\s*)(platform:\s*linux/arm64)', r'\1#\2', content, flags=re.MULTILINE)
+                if new_content != content:
+                    with open(file_path, "w") as f:
+                        f.write(new_content)
 
 TEMPLATE_PATH = os.path.join(_get_ac_module_path(), "template")
 REPLACE_TOKEN = "{{project}}"
@@ -222,6 +246,10 @@ class AcWorkspace:
         shutil.copytree(template_folder, target_path)
         self._replace_projectname_placeholder(project_name, target_path)
 
+        # Adjust platform lines for arm64
+        if platform.machine() == "arm64" or platform.machine() == "aarch64":
+            _adjust_platform_lines(target_path, uncomment=True)
+        
         ac_settings = self.get_settings()
         
         if ac_settings.settings["active_project"] == "":
@@ -350,7 +378,9 @@ class AcWorkspace:
                         f.seek(0)
                         f.write(content)
                         f.truncate()
-        
+                        
+        # Always comment out platform lines on export
+        _adjust_platform_lines(ac_repo_path, uncomment=False)
         AcOutputManager.success(f"Project {project_name} exported to {ac_repo_path}.")
 
     def import_project(self, project_name, repo_path):
@@ -359,7 +389,6 @@ class AcWorkspace:
         '''
         IMPORT_AC_FOLDER = f".ac_{project_name}"
         ac_repo_path = os.path.join(repo_path, IMPORT_AC_FOLDER)
-        
         if not os.path.exists(ac_repo_path):
             AcOutputManager.fail(f"Failed to import project. The directory {ac_repo_path} does not exist. Ensure the path is correct or use the --repo_path option if the repo directory name does not match the project name. The .ac folder must be called {IMPORT_AC_FOLDER}.")
             exit(1)
@@ -392,7 +421,9 @@ class AcWorkspace:
                         f.seek(0)
                         f.write(content)
                         f.truncate()
-        
+        # Adjust platform lines for arm64
+        if platform.machine() == "arm64" or platform.machine() == "aarch64":
+            _adjust_platform_lines(project_path, uncomment=True)
         AcOutputManager.success(f"Project {project_name} imported from {ac_repo_path}.")
 
     
