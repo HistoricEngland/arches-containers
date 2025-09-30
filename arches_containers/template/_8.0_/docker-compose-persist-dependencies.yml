@@ -12,7 +12,7 @@ services:
 
     db-{{project_urlsafe}}:
       container_name: db-{{project_urlsafe}}
-      image: postgis/postgis:14-3.2
+      image: postgis/postgis:16-3.5
       volumes:
         - ../../{{project}}-postgres-data:/var/lib/postgresql/data
         - ../../{{project}}-postgres-log:/var/log/postgresql
@@ -36,7 +36,8 @@ services:
 
     elasticsearch-{{project_urlsafe}}:
       container_name: elasticsearch-{{project_urlsafe}}
-      image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
+      image: docker.elastic.co/elasticsearch/elasticsearch:8.19.4
+      #platform: linux/arm64
       volumes:
         - ../../{{project}}-elasticsearch-data:/usr/share/elasticsearch/data
       ports:
