@@ -37,7 +37,10 @@ def create_banner():
     styled_banner = Text()
     for i, line in enumerate(minibanner_lines):
         color = colors[i % len(colors)]
-        styled_banner.append(line + "\n", style=color)
+        if i == len(minibanner_lines) - 1:
+            styled_banner.append(line, style=color)
+        else:
+            styled_banner.append(line + "\n", style=color)
     
     return styled_banner
 
@@ -45,6 +48,7 @@ class _RichSpinner:
     def __init__(self, text=""):
         self.console = Console()
         #self.console.rule(f"Arches Containers CLI v{arches_containers.AC_VERSION}")
+        self.console.rule(style="bold red")
         self.console.print(Align.left(create_banner()))
         self.console.rule(style="bold red")
         self.text = text
