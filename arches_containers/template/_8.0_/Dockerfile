@@ -25,7 +25,7 @@ RUN mkdir ${DATA_ROOT}
 
 # Set up PostgreSQL APT repository with modern GPG keyring method
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates lsb-release gnupg \
+    apt-get install -y --no-install-recommends curl ca-certificates lsb-release gnupg git \
   && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg \
   && echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
   && apt-get update -y
