@@ -10,7 +10,7 @@ from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject
 from arches_containers.utils.create_launch_config import generate_launch_config
 from arches_containers.utils.logger import AcOutputManager
 
-   
+
 def main():
     parser = argparse.ArgumentParser(description="Create and manage Arches container projects.", formatter_class=RichHelpFormatter)
     
@@ -95,7 +95,7 @@ def main():
     # ========================================================================================================
     if args.command == "create":
         with AcOutputManager("Creating project") as spinner:
-            AcOutputManager.write(f"▶️ Creating project: {args.project_name}")
+            AcOutputManager.write(f"▶️  Creating project: {args.project_name}")
             
             project_name = slugify(args.project_name)
             project = ac_workspace.create_project(project_name, args)
@@ -110,7 +110,7 @@ def main():
                 AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
 
         with AcOutputManager(f"Running {args.command} command for project: {args.project_name}") as spinner:
-            AcOutputManager.write(f"▶️ {args.command.capitalize()} command for project: {args.project_name}")
+            AcOutputManager.write(f"▶️  {args.command.capitalize()} command for project: {args.project_name}")
             
             if hasattr(args, 'organization') or hasattr(args, 'branch'):
                 ac_project = ac_workspace.get_project(args.project_name)
@@ -146,7 +146,7 @@ def main():
 
     # ========================================================================================================
     elif args.command == "list":
-        AcOutputManager.write("▶️ Arches Container Projects")
+        AcOutputManager.write("▶️  Arches Container Projects")
         projects = ac_workspace.list_projects()
         if not projects:
             AcOutputManager.write("No projects found.")
@@ -161,7 +161,7 @@ def main():
 
     # ========================================================================================================
     elif args.command == "delete":
-        AcOutputManager.write(f"▶️ Deleting project: {args.project_name}")
+        AcOutputManager.write(f"▶️  Deleting project: {args.project_name}")
         with AcOutputManager(f"Deleting project: {args.project_name}") as spinner:
             ac_workspace.delete_project(args.project_name)
     
@@ -172,7 +172,7 @@ def main():
     
     # ========================================================================================================
     elif args.command == "export":
-        AcOutputManager.write("▶️ Exporting project")
+        AcOutputManager.write("▶️  Exporting project")
         if args.project_name == "" or args.project_name is None:
             try:
                 args.project_name = ac_settings.get_active_project_name()
@@ -183,7 +183,7 @@ def main():
     
     # ========================================================================================================
     elif args.command == "import":
-        AcOutputManager.write("▶️ Importing project")
+        AcOutputManager.write("▶️  Importing project")
         if args.project_name == "" or args.project_name is None:
             AcOutputManager.fail("Project name is required for import.")
 
@@ -193,7 +193,7 @@ def main():
     # ========================================================================================================
     elif args.command == "status":
         with AcOutputManager("Checking active project container status") as spinner:
-            AcOutputManager.write("▶️ Checking active project container status")
+            AcOutputManager.write("▶️  Checking active project container status")
             status()
 
     # ========================================================================================================

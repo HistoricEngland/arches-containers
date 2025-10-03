@@ -4,12 +4,53 @@ from prettytable import PrettyTable
 from rich.console import Console
 from rich.spinner import Spinner as RichSpinner
 from rich.live import Live
+from rich.align import Align
+from rich.text import Text
 import arches_containers
+from arches_containers import AC_VERSION as arches_containers_version
+
+BANNER = f"""
+_█████╗ ██████╗  ██████╗██╗  ██╗███████╗███████╗   ██████╗ ██████╗ ███╗   ██╗████████╗ █████╗ ██████╗███╗   ██╗███████╗██████╗ ███████╗
+██╔══██╗██╔══██╗██╔════╝██║  ██║██╔════╝██╔════╝  ██╔════╝██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗╚═██╔═╝████╗  ██║██╔════╝██╔══██╗██╔════╝
+███████║██████╔╝██║     ███████║█████╗  ███████╗  ██║     ██║   ██║██╔██╗ ██║   ██║   ███████║  ██║  ██╔██╗ ██║█████╗  ██████╔╝███████╗
+██╔══██║██╔══██╗██║     ██╔══██║██╔══╝  ╚════██║  ██║     ██║   ██║██║╚██╗██║   ██║   ██╔══██║  ██║  ██║╚██╗██║██╔══╝  ██╔══██╗╚════██║
+██║  ██║██║  ██║╚██████╗██║  ██║███████╗███████║  ╚██████╗╚██████╔╝██║ ╚████║   ██║   ██║  ██║██████╗██║ ╚████║███████╗██║  ██║███████║
+╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚══════╝   ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝╚═════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝╚══════╝v{arches_containers_version}
+"""
+
+MINIBANNER = f"""
+_█████╗        ██████╗        ████████╗
+██╔══██╗      ██╔════╝        ╚══██╔══╝
+███████║      ██║                ██║   
+██╔══██║      ██║                ██║  
+██║  ██║      ╚██████╗           ██║  
+╚═╝  ╚═╝rches  ╚═════╝ontainer   ╚═╝ools  v{arches_containers_version}
+"""
+
+def create_banner():
+    """Display the ASCII art banner."""
+    # Create gradient effect with different colors
+    banner_lines = BANNER.strip().split('\n')
+    minibanner_lines = MINIBANNER.strip().split('\n')
+    colors = ["dark_red", "red3", "red1", "indian_red", "white", "bright_white"]
+    
+    styled_banner = Text()
+    for i, line in enumerate(minibanner_lines):
+        color = colors[i % len(colors)]
+        if i == len(minibanner_lines) - 1:
+            styled_banner.append(line, style=color)
+        else:
+            styled_banner.append(line + "\n", style=color)
+    
+    return styled_banner
 
 class _RichSpinner:
     def __init__(self, text=""):
         self.console = Console()
-        self.console.rule(f"Arches Containers CLI v{arches_containers.AC_VERSION}")
+        #self.console.rule(f"Arches Containers CLI v{arches_containers.AC_VERSION}")
+        self.console.rule(style="bold red")
+        self.console.print(Align.left(create_banner()))
+        self.console.rule(style="bold red")
         self.text = text
         self._spinner = RichSpinner("dots", text=self.text)
         self._live = None
