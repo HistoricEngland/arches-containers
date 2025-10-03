@@ -28,7 +28,7 @@ maintainers = [
     { name = "Andrew Jones", email = "andrew.jones@historicengland.org.uk" }
 ]
 dependencies = [
-    "python-slugify==7.0.0",
+    "python-slugify==8.0.4",
     "text-unidecode==1.3",
     "rich==13.9.4",
     "rich-argparse==1.6.0",
