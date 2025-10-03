@@ -1,4 +1,4 @@
-FROM python:3.13.0
+FROM python:3.13-slim-bookworm
 USER root
 
 ## Build Args
@@ -16,61 +16,50 @@ ENV DATA_ROOT=${APP_ROOT}_data
 ENV ARCHES_ROOT=${WEB_ROOT}/arches
 ENV WHEELS=/wheels
 ENV PYTHONUNBUFFERED=1
-ENV NODE_VERSION 20.14.0
-
-RUN apt-get update && apt-get install -y make software-properties-common
+ENV NODE_VERSION=20.14.0
 
 # Get the pre-built python wheels from the build environment
 RUN mkdir ${WEB_ROOT}
 RUN mkdir ${PKG_ROOT}
 RUN mkdir ${DATA_ROOT}
 
-# Install packages required to run Arches
-# Note that the ubuntu/debian package for libgdal1-dev pulls in libgdal1i, which is built
-# with everything enabled, and so, it has a huge amount of dependancies (everything that GDAL
-# support, directly and indirectly pulling in mysql-common, odbc, jp2, perl! ... )
-# a minimised build of GDAL could remove several hundred MB from the container layer.
-RUN apt-get install -y --no-install-recommends curl \
-  && apt-get update -y 
+# Set up PostgreSQL APT repository with modern GPG keyring method
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates lsb-release gnupg git \
+  && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg \
+  && echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+  && apt-get update -y
 
-RUN curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
-  && sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
-  && apt-get update -y 
-
-RUN set -ex \
-  && RUN_DEPS=" \
-  build-essential \
-  mime-support \
-  libgdal-dev \
-  postgresql-client-14 \
-  dos2unix \
-  " \
-  && apt-get install -y --no-install-recommends $RUN_DEPS
-
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        make \
+        software-properties-common \
+        build-essential \
+        mime-support \
+        libgdal-dev \
+        postgresql-client-14 \
+        dos2unix \
+        wait-for-it \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # nvm environment variables
-ENV NVM_DIR /usr/local/nvm
+ENV NVM_DIR=/usr/local/nvm
 RUN mkdir $NVM_DIR
-
-
 
 # install nvm
 # https://github.com/nvm-sh/nvm#install-script
 RUN curl --silent -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash -
 
 # install node and npm
-RUN echo "source $NVM_DIR/nvm.sh \
+RUN . $NVM_DIR/nvm.sh \
     && nvm install $NODE_VERSION \
     && nvm alias default $NODE_VERSION \
-    && nvm use default" | bash -
+    && nvm use default
 
 # add node and npm to path so the commands are available
-ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
-ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
-
-RUN apt install wait-for-it
-
-RUN rm -rf /root/.cache/pip/*
+ENV NODE_PATH=$NVM_DIR/v$NODE_VERSION/lib/node_modules
+ENV PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
 # Install the Arches application
 # FIXME: ADD from github repository instead?
@@ -82,7 +71,8 @@ WORKDIR ${ARCHES_ROOT}
 
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install -e '.[dev]'
-RUN pre-commit install
+RUN rm -rf /root/.cache/pip/*
+
 
 COPY $DOCKER_PATH/entrypoint.sh /entrypoint.sh
 RUN chmod -R 700 /entrypoint.sh && \

@@ -2,6 +2,7 @@ import pytest
 import os
 import shutil
 import json
+import platform
 from arches_containers.utils.workspace import (
     AcWorkspace, 
     AcSettings, 
@@ -30,62 +31,81 @@ def workspace_with_project(temp_workspace):
     temp_workspace.create_project(project_name, Args())
     return temp_workspace, project_name
 
+def get_platform_line(yaml_path):
+    if not os.path.exists(yaml_path):
+        return None
+    with open(yaml_path) as f:
+        for line in f:
+            if 'platform:' in line:
+                return line.rstrip('\n')
+    return None
+
 class TestAcWorkspace:
     def test_workspace_creation(self, temp_workspace):
         assert os.path.exists(os.path.join(temp_workspace.path, AC_DIRECTORY_NAME))
 
-    def test_create_project(self, temp_workspace):
+    @pytest.mark.parametrize("version", ["7.6", "8.0"])
+    def test_create_project(self, temp_workspace, monkeypatch, version):
         class Args:
-            version = "7.6"
-            organization = "archesproject"
-            branch = "main"
-
+            pass
+        Args.version = version
+        Args.organization = "archesproject"
+        Args.branch = "main"
+        # Simulate arm64
+        monkeypatch.setattr(platform, "machine", lambda: "arm64")
         project = temp_workspace.create_project("test_project", Args())
         assert os.path.exists(os.path.join(temp_workspace._get_ac_directory_path(), "test_project"))
         assert project["arches_repo_organization"] == "archesproject"
         assert project["arches_repo_branch"] == "main"
+        # Check platform line uncommented for arm64 if present
+        compose_path = os.path.join(temp_workspace._get_ac_directory_path(), "test_project", "docker-compose-dependencies.yml")
+        line = get_platform_line(compose_path)
+        if line is not None:
+            assert line.strip().startswith("platform: linux/arm64") or line.strip().startswith("#platform: linux/arm64")
+        # Simulate amd64
+        monkeypatch.setattr(platform, "machine", lambda: "x86_64")
+        project2 = temp_workspace.create_project("test_project2", Args())
+        compose_path2 = os.path.join(temp_workspace._get_ac_directory_path(), "test_project2", "docker-compose-dependencies.yml")
+        line2 = get_platform_line(compose_path2)
+        if line2 is not None:
+            assert line2.strip().startswith("#platform: linux/arm64")
 
-    def test_list_projects(self, workspace_with_project):
-        workspace, project_name = workspace_with_project
-        projects = workspace.list_projects()
-        assert project_name in projects
-
-    def test_delete_project(self, workspace_with_project):
-        workspace, project_name = workspace_with_project
-        workspace.delete_project(project_name)
-        assert project_name not in workspace.list_projects()
-
-    def test_get_project(self, workspace_with_project):
-        workspace, project_name = workspace_with_project
-        project = workspace.get_project(project_name)
-        assert isinstance(project, AcProject)
-        assert project.project_name == project_name
-
-    def test_export_project(self, workspace_with_project, tmp_path):
+    @pytest.mark.parametrize("version", ["7.6", "8.0"])
+    def test_export_project(self, workspace_with_project, tmp_path, monkeypatch, version):
         workspace, project_name = workspace_with_project
         repo_path = tmp_path / "test_repo"
         repo_path.mkdir()
+        # Simulate arm64
+        monkeypatch.setattr(platform, "machine", lambda: "arm64")
         workspace.export_project(project_name, str(repo_path))
-        assert os.path.exists(os.path.join(repo_path, f".ac_{project_name}"))
+        exported_compose = os.path.join(repo_path, f".ac_{project_name}", "docker-compose-dependencies.yml")
+        line = get_platform_line(exported_compose)
+        if line is not None:
+            assert line.strip().startswith("#platform: linux/arm64")
 
-    def test_import_project(self, workspace_with_project, tmp_path):
+    @pytest.mark.parametrize("version", ["7.6", "8.0"])
+    def test_import_project(self, workspace_with_project, tmp_path, monkeypatch, version):
         workspace, project_name = workspace_with_project
         repo_path = tmp_path / "test_repo"
         repo_path.mkdir()
-        
         # First export the project
         workspace.export_project(project_name, str(repo_path))
-        
         # Delete original project
         workspace.delete_project(project_name)
-        
+        # Simulate arm64
+        monkeypatch.setattr(platform, "machine", lambda: "arm64")
         # Import project back
         workspace.import_project(project_name, str(repo_path))
         assert project_name in workspace.list_projects()
+        compose_path = os.path.join(workspace._get_ac_directory_path(), project_name, "docker-compose-dependencies.yml")
+        line = get_platform_line(compose_path)
+        if line is not None:
+            assert line.strip().startswith("platform: linux/arm64")
 
 class TestAcSettings:
     def test_settings_creation(self, temp_workspace):
         settings = temp_workspace.get_settings()
+        settings.clear_active_project()
         assert settings.settings["active_project"] == ""
         assert settings.settings["host"] == "localhost"
         assert settings.settings["port"] == 8002

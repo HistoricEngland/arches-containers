@@ -24,6 +24,7 @@ It is recommended that you use a virtual environment within the workspace. The f
 cd /path/to/workspace
 python -m venv env
 source env/bin/activate  # On Windows use `env\Scripts\activate`
+
 ```
 
 > See the [Arches documentation](https://arches.readthedocs.io/en/stable/installing/installation/) for more information.
@@ -101,22 +102,67 @@ The following commands are available for managing projects:
 
 ```sh
 cd /path/to/workspace
-act up [-p <project_name>] [-b] [-vb]
+act up [-p <project_name>] [-b] [-vb] [--app | --dep]
 ```
 
 - `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
 - `-b`, `--build`: Rebuild containers when composing up.
 - `-vb`, `--verbose`: Print verbose output during the compose processes.
+- `--app`: Only operate on application containers (docker-compose.yml). Mutually exclusive with --dep.
+- `--dep`: Only operate on dependency containers (docker-compose-dependencies.yml). Mutually exclusive with --app.
 
 #### Stop a Project
 
 ```sh
 cd /path/to/workspace
-act down [-p <project_name>] [-vb]
+act down [-p <project_name>] [-vb] [--app | --dep]
 ```
 
 - `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
 - `-vb`, `--verbose`: Print verbose output during the compose processes.
+- `--app`: Only operate on application containers (docker-compose.yml). Mutually exclusive with --dep.
+- `--dep`: Only operate on dependency containers (docker-compose-dependencies.yml). Mutually exclusive with --app.
+
+#### Restart a Project
+
+Restarts the project containers by stopping and then starting them. Useful for applying changes such as new dependencies or forcing a rebuild.
+
+```sh
+cd /path/to/workspace
+act restart [-p <project_name>] [-b] [-vb] [--app | --dep]
+```
+
+- `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
+- `-b`, `--build`: Rebuild containers when composing up (after stopping them).
+- `-vb`, `--verbose`: Print verbose output during the compose processes.
+- `--app`: Only operate on application containers (docker-compose.yml). Mutually exclusive with --dep.
+- `--dep`: Only operate on dependency containers (docker-compose-dependencies.yml). Mutually exclusive with --app.
+
+**Examples:**
+
+Restart and force rebuild:
+
+```sh
+act restart -b
+```
+
+Restart with verbose output:
+
+```sh
+act restart -b -vb
+```
+
+Restart only application containers:
+
+```sh
+act restart --app
+```
+
+Restart only dependency containers with rebuild:
+
+```sh
+act restart --dep -b
+```
 
 #### Initialize a Project
 
@@ -195,6 +241,7 @@ act import -p <project_name> [-r <repo_path>]
 - `-r`, `--repo_path`: OPTIONAL - Use this is the name of the repo directory does not match the pattern `<workspace_path>/<project_name>`. This path **must** contain a folder called `.ac_<project_name>`.
 
 **example:**
+
 Given the following directory structure:
 
 ```text
@@ -249,8 +296,8 @@ The project configuration file `config.json` is used to store default values for
 
 ```json
 {
-    "project_name": "arches_her_project",
-    "project_name_url_safe": "archesherproject",
+  "project_name": "arches_her_project",
+  "project_name_url_safe": "archesherproject",
     "arches_version": "7.5",
     "arches_repo_organization": "archesproject",
     "arches_repo_branch": "dev/7.5.x"
@@ -295,13 +342,15 @@ Ensure the version number is updated in both pyproject.toml and the `arches_cont
 Also update the Development Status classifier in pyproject.toml to match your release type:
 
 - **For PyPI releases**:
-  ```
+  
+  ```text
   "Development Status :: 5 - Production/Stable"  # For final releases
   "Development Status :: 4 - Beta"               # For release candidates
   ```
 
 - **For TestPyPI releases**:
-  ```
+  
+  ```text
   "Development Status :: 3 - Alpha"              # For alpha/development releases
   "Development Status :: 4 - Beta"               # For beta releases
   ```

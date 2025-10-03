@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arches-containers"
-version = "1.0.0rc1"
+version = "1.0.0rc3"
 description = "A python developer tool for Arches Project that provides a way to create arches development environments. Supports Arches 6.1 to 8.0 (current development version)."
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { text = "AGPL-3.0" }
 keywords = ["arches", "development", "containers"]
 classifiers = [
@@ -18,8 +18,9 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
-readme = "README.md"
+readme = {file = "README.md", content-type = "text/markdown"}
 authors = [
     { name = "Andrew Jones", email = "andrew.jones@historicengland.org.uk" }
 ]
