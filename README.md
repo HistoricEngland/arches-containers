@@ -219,8 +219,6 @@ The user can export an arches-container project to a repository folder. This is 
 
 The docker compose files in the exported arches-container project will need to be run manually as the command only access those in the `.arches-containers` folder.
 
-> TODO: In future there will a command to import a project from a repository folder so it is available to the command line.
-
 ```sh
 cd /path/to/workspace
 act export [-p <project_name>] [-r <repo_path>]
