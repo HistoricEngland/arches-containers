@@ -31,6 +31,7 @@ def change_arches_branch(project_name, verbose=False):
     # check the arches repo exists
     if not os.path.exists(clone_dir):
         clone_and_checkout_repo(project_name, verbose)
+        return
 
     os.chdir(clone_dir)
     result = subprocess.run(
