@@ -30,11 +30,11 @@ maintainers = [
 dependencies = [
     "python-slugify==8.0.4",
     "text-unidecode==1.3",
+    "black==25.9.0"
     "rich==14.2.0",
     "prettytable==3.16.0",
     "rich-argparse==1.7.1",
     "pre-commit==4.3.0",
-    "black==24.4.2"
 ]
 
 [project.optional-dependencies]
