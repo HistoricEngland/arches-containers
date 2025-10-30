@@ -27,6 +27,11 @@ def clone_and_checkout_repo(project_name, verbose=False):
 
 def change_arches_branch(project_name, verbose=False):
     ac_project, repo_url, clone_dir, branch = _get_repo_info(project_name)
+
+    # check the arches repo exists
+    if not os.path.exists(clone_dir):
+        clone_and_checkout_repo(project_name, verbose)
+
     os.chdir(clone_dir)
     result = subprocess.run(
         ["git", "checkout", branch],
