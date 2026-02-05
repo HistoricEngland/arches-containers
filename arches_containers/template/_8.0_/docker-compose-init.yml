@@ -6,6 +6,7 @@ services:
       build:
         args:
           - "PROJ_NAME={{project}}"
+          - "PROJ_REPO_NAME={{project_directory}}"
           - "DOCKER_PATH=./.arches_containers/{{project}}/docker"
         context: ../..
         dockerfile: ./.arches_containers/{{project}}/Dockerfile

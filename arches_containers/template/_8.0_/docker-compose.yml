@@ -6,16 +6,17 @@ services:
       build:
         args:
           - "PROJ_NAME={{project}}"
+          - "PROJ_REPO_NAME={{project_directory}}"
           - "DOCKER_PATH=./.arches_containers/{{project}}/docker"
         context: ../..
         dockerfile: ./.arches_containers/{{project}}/Dockerfile
       command: run_arches
       volumes:
         - ../../arches:/web_root/arches
-        - ../../{{project}}:/web_root/{{project}}
+        - ../../{{project_directory}}:/web_root/{{project_directory}}
         - ./docker:/web_root/docker
-        - ../../{{project}}-package:/web_root/{{project}}_package
-        - ../../{{project}}-data:/web_root/{{project}}_data
+        - ../../{{project_directory}}-package:/web_root/{{project_directory}}_package
+        - ../../{{project_directory}}-data:/web_root/{{project_directory}}_data
       env_file:
         - ./docker/env_file.env
       ports:
@@ -33,10 +34,10 @@ services:
     #  command: ["bash"]
     #  volumes:
     #    - ../../arches:/web_root/arches
-    #    - ../../{{project}}:/web_root/{{project}}
+    #    - ../../{{project_urlsafe}}:/web_root/{{project_urlsafe}}
     #    - ./docker:/web_root/docker
-    #    - ../../{{project}}-package:/web_root/{{project}}_package
-    #    - ../../{{project}}-data:/web_root/{{project}}_data
+    #    - ../../{{project_urlsafe}}-package:/web_root/{{project_urlsafe}}_package
+    #    - ../../{{project_urlsafe}}-data:/web_root/{{project_urlsafe}}_data
     #  env_file:
     #    - ./docker/env_file.env
     #  ports:
@@ -54,7 +55,7 @@ services:
       command: run_livereload
       volumes:
         - ../../arches:/web_root/arches
-        - ../../{{project}}:/web_root/{{project}}
+        - ../../{{project_directory}}:/web_root/{{project_directory}}
       env_file:
         - ./docker/env_file.env
       ports:
@@ -70,7 +71,7 @@ services:
       command: run_webpack
       volumes:
         - ../../arches:/web_root/arches
-        - ../../{{project}}:/web_root/{{project}}
+        - ../../{{project_directory}}:/web_root/{{project_directory}}
       env_file:
         - ./docker/env_file.env
       ports:

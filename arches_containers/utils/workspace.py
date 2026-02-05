@@ -44,6 +44,7 @@ def _adjust_platform_lines(target_path, uncomment: bool):
 TEMPLATE_PATH = os.path.join(_get_ac_module_path(), "template")
 REPLACE_TOKEN = "{{project}}"
 REPLACE_TOKEN_URLSAFE = "{{project_urlsafe}}"
+REPLACE_TOKEN_DIRECTORY = "{{project_directory}}"
 
 
 DEFAULT_AC_SETTINGS = {
@@ -59,6 +60,7 @@ class AcProjectSettings(Enum):
         return self.value
     PROJECT_NAME = "project_name"
     PROJECT_NAME_URLSAFE = "project_name_url_safe"
+    PROJECT_DIRECTORY = "project_directory"
     PROJECT_ARCHES_VERSION = "arches_version"
     PROJECT_ARCHES_REPO_ORGANIZATION = "arches_repo_organization"
     PROJECT_ARCHES_REPO_BRANCH = "arches_repo_branch"
@@ -230,7 +232,7 @@ class AcWorkspace:
         return None
 
     def _get_urlsafe_project_name(self, project_name):
-        return slugify(text=project_name, separator="")
+        return slugify(text=project_name, separator="-")
 
     def _create_proj_directory(self, project_name, version):
         template_folder = self._get_template_folder(version)
@@ -264,8 +266,33 @@ class AcWorkspace:
                     s = f.read()
                 s = s.replace(REPLACE_TOKEN, project_name)
                 s = s.replace(REPLACE_TOKEN_URLSAFE, self._get_urlsafe_project_name(project_name))
+                s = s.replace(REPLACE_TOKEN_DIRECTORY, self._get_urlsafe_project_name(project_name))
                 with open(fpath, "w") as f:
                     f.write(s)
+
+    def _get_project_repo_path(self, project_name):
+        # get the project and check in the project_directory setting
+        project = self.get_project(project_name)
+        #check the AcProjectSettings.PROJECT_DIRECTORY setting exists as this has been introduced in 1.1.0
+        if AcProjectSettings.PROJECT_DIRECTORY.value in project._config:
+            project_directory = project[AcProjectSettings.PROJECT_DIRECTORY.value]
+        else:
+            # if it doesn't exist then it is likely that the repo exists from before using the prject_name as the directory
+            # check for the project name in the workspace
+            if os.path.exists(os.path.join(self._path, project_name)):
+                project_directory = project_name
+            else:
+                # if the arches_version is less than 8.0, use the project_name as the directory else the urlsafe version
+                arches_version = project[AcProjectSettings.PROJECT_ARCHES_VERSION.value]
+                if float(arches_version) < 8.0:
+                    project_directory = project_name
+                else:
+                    project_directory = self._get_urlsafe_project_name(project_name)
+
+            project[AcProjectSettings.PROJECT_DIRECTORY.value] = project_directory
+            project.save()
+        return os.path.join(self._path(), project_directory)
+
 
     # PUBLIC METHODS
     def get_project(self, project_name) -> AcProject:
@@ -290,6 +317,9 @@ class AcWorkspace:
         self._create_proj_directory(project_name, args.version)
         # update the project config if organization is provided in args
         project = self.get_project(project_name)
+        project[AcProjectSettings.PROJECT_NAME.value] = project_name
+        project[AcProjectSettings.PROJECT_NAME_URLSAFE.value] = self._get_urlsafe_project_name(project_name)
+        project[AcProjectSettings.PROJECT_DIRECTORY.value] = project[AcProjectSettings.PROJECT_NAME_URLSAFE.value]
         if args.organization:
             project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
         if args.branch:

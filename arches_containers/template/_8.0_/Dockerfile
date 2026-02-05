@@ -2,14 +2,16 @@ FROM python:3.13-slim-bookworm
 USER root
 
 ## Build Args
-ARG PROJ_NAME=project
+ARG PROJ_NAME={{project}}
+ARG PROJ_REPO_NAME={{project_directory}}
 ARG ARCHES_PATH=./arches
 ARG DOCKER_PATH=./docker
 
 ## Setting default environment variables
 ENV ARCHES_PROJECT=$PROJ_NAME
+ENV ARCHES_PROJECT_DIRECTORY=$PROJ_REPO_NAME
 ENV WEB_ROOT=/web_root
-ENV APP_ROOT=${WEB_ROOT}/${ARCHES_PROJECT}
+ENV APP_ROOT=${WEB_ROOT}/${ARCHES_PROJECT_DIRECTORY}
 ENV PKG_ROOT=${APP_ROOT}_package
 ENV DATA_ROOT=${APP_ROOT}_data
 # Root project folder
@@ -20,8 +22,8 @@ ENV NODE_VERSION=20.14.0
 
 # Get the pre-built python wheels from the build environment
 RUN mkdir ${WEB_ROOT}
-RUN mkdir ${PKG_ROOT}
-RUN mkdir ${DATA_ROOT}
+RUN mkdir "${PKG_ROOT}"
+RUN mkdir "${DATA_ROOT}"
 
 # Set up PostgreSQL APT repository with modern GPG keyring method
 RUN apt-get update && \
