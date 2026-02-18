@@ -6,17 +6,17 @@ services:
       build:
         args:
           - "PROJ_NAME={{project}}"
-          - "PROJ_REPO_NAME={{project_directory}}"
+          - "PROJ_REPO_NAME={{project_repo_directory}}"
           - "DOCKER_PATH=./.arches_containers/{{project}}/docker"
         context: ../..
         dockerfile: ./.arches_containers/{{project}}/Dockerfile
       command: run_arches
       volumes:
         - ../../arches:/web_root/arches
-        - ../../{{project_directory}}:/web_root/{{project_directory}}
+        - ../../{{project_repo_directory}}:/web_root/{{project_repo_directory}}
         - ./docker:/web_root/docker
-        - ../../{{project_directory}}-package:/web_root/{{project_directory}}_package
-        - ../../{{project_directory}}-data:/web_root/{{project_directory}}_data
+        - ../../{{project_repo_directory}}-package:/web_root/{{project_repo_directory}}_package
+        - ../../{{project_repo_directory}}-data:/web_root/{{project_repo_directory}}_data
       env_file:
         - ./docker/env_file.env
       ports:
@@ -55,7 +55,7 @@ services:
       command: run_livereload
       volumes:
         - ../../arches:/web_root/arches
-        - ../../{{project_directory}}:/web_root/{{project_directory}}
+        - ../../{{project_repo_directory}}:/web_root/{{project_repo_directory}}
       env_file:
         - ./docker/env_file.env
       ports:
@@ -71,7 +71,7 @@ services:
       command: run_webpack
       volumes:
         - ../../arches:/web_root/arches
-        - ../../{{project_directory}}:/web_root/{{project_directory}}
+        - ../../{{project_repo_directory}}:/web_root/{{project_repo_directory}}
       env_file:
         - ./docker/env_file.env
       ports:

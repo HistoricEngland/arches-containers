@@ -56,18 +56,25 @@ db_exists() {
 	fi
 }
 
+project_exists() {
+	if [[ -d ${APP_ROOT}/${ARCHES_PROJECT} ]] && [[ "$(ls ${APP_ROOT}/${ARCHES_PROJECT})" ]]; then
+		return 0
+	else
+		return 1
+	fi
+}
 
 #### Install
 init_arches() {
 	echo "Checking if Arches project "${ARCHES_PROJECT}" exists..."
-	if [[ ! -d ${APP_ROOT}/${ARCHES_PROJECT} ]] || [[ ! "$(ls ${APP_ROOT}/${ARCHES_PROJECT})" ]]; then
+	if ! project_exists; then
 		echo ""
-		echo "----- Custom Arches project '${ARCHES_PROJECT}' does not exist. -----"
+		echo "----- Arches project '${ARCHES_PROJECT}' does not exist. -----"
 		#echo "----- Use the "create_project" command to create the project and then restart the container -----"
 		echo ""
 		create_arches_project
 	else
-		echo "Custom Arches project '${ARCHES_PROJECT}' exists."
+		echo "Arches project '${ARCHES_PROJECT}' exists."
 	fi
 
 	wait_for_db
@@ -84,22 +91,25 @@ create_arches_project_only(){
 	echo ""
 	echo "----- Creating '${ARCHES_PROJECT}'... -----"
 	echo ""
-
-	cd ${WEB_ROOT}
-	python3 ${WEB_ROOT}/arches/arches/install/arches_admin.py startproject ${ARCHES_PROJECT}
-	echo "...Checking directories are created..."
-	sleep 2
-	if [[ ! -d ${APP_ROOT}/${ARCHES_PROJECT} ]] || [[ ! "$(ls ${APP_ROOT}/${ARCHES_PROJECT})" ]]; then
-		echo "Something went wrong when creating your Arches project: ${ARCHES_PROJECT}."
-		echo "Exiting..."
-		exit 1
+	if ! project_exists; then
+		cd ${WEB_ROOT}
+		python3 ${WEB_ROOT}/arches/arches/install/arches_admin.py startproject ${ARCHES_PROJECT}
+		echo "...Checking directories are created..."
+		sleep 2
+		if ! project_exists; then
+			echo "Something went wrong when creating your Arches project: ${ARCHES_PROJECT}."
+			echo "Exiting..."
+			exit 1
+		fi
+		echo "----- '${ARCHES_PROJECT}' created. -----"
+	else 
+		echo "Arches project '${ARCHES_PROJECT}' exists."
 	fi
-	echo "----- '${ARCHES_PROJECT}' created. -----"
 }
 
 create_arches_project() {
 	echo "Checking if Arches project "${ARCHES_PROJECT}" exists..."
-	if [[ ! -d ${APP_ROOT}/${ARCHES_PROJECT} ]] || [[ ! "$(ls ${APP_ROOT}/${ARCHES_PROJECT})" ]]; then
+	if ! project_exists; then
 		echo ""
 		echo "----- Creating '${ARCHES_PROJECT}'... -----"
 		echo ""
@@ -150,11 +160,9 @@ run_setup_db() {
 	echo ""
 	echo "----- RUNNING SETUP_DB -----"
 	echo ""
-	if [[ -d ${APP_ROOT}/${ARCHES_PROJECT}/pkg ]];then
+	if ! run_load_package;then
 		cd ${APP_ROOT}
-		python3 manage.py packages -o load_package -s ${ARCHES_PROJECT}/pkg -db -dev -y
-	else
-		cd ${APP_ROOT}
+		echo "Running setup_db command..."
 		python3 manage.py setup_db --force
 	fi
 }
@@ -166,6 +174,10 @@ run_load_package() {
 	cd ${APP_ROOT}
 	if [[ -d ${ARCHES_PROJECT}/pkg ]];then
 		python3 manage.py packages -o load_package -s ${ARCHES_PROJECT}/pkg -db -dev -y
+		return 0
+	else 
+		echo "Package directory not found for ${ARCHES_PROJECT}."
+		return 1
 	fi
 }
 
@@ -210,7 +222,7 @@ run_webpack() {
 	echo ""
 	cd ${APP_ROOT}
     echo "Running Webpack"
-	exec sh -c "cd ${APP_ROOT} && npm install && npm run build_development && wait-for-it ${ARCHES_PROJECT_DIRECTORY}:${DJANGO_PORT} -t 1200 && npm start"
+	exec sh -c "cd ${APP_ROOT} && npm install && npm run build_development && wait-for-it ${ARCHES_PROJECT_REPO_DIRECTORY}:${DJANGO_PORT} -t 1200 && npm start"
 }
 
 ### Starting point ###

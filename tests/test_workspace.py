@@ -7,7 +7,7 @@ from arches_containers.utils.workspace import (
     AcWorkspace, 
     AcSettings, 
     AcProject, 
-    AcProjectSettings,
+    AcProjectAttributes,
     AC_DIRECTORY_NAME
 )
 
@@ -132,12 +132,12 @@ class TestAcProject:
     def test_project_config_modification(self, workspace_with_project):
         workspace, project_name = workspace_with_project
         project = workspace.get_project(project_name)
-        project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] = "test_org"
+        project[AcProjectAttributes.PROJECT_ARCHES_REPO_ORGANIZATION.value] = "test_org"
         project.save()
 
         # Reload project to verify save
         project = workspace.get_project(project_name)
-        assert project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] == "test_org"
+        assert project[AcProjectAttributes.PROJECT_ARCHES_REPO_ORGANIZATION.value] == "test_org"
 
     def test_get_project_path(self, workspace_with_project):
         workspace, project_name = workspace_with_project
@@ -145,8 +145,8 @@ class TestAcProject:
         expected_path = os.path.join(workspace._get_ac_directory_path(), project_name)
         assert project.get_project_path() == expected_path
 
-class TestAcProjectSettings:
+class TestAcProjectAttributes:
     def test_project_settings_enum(self):
-        assert str(AcProjectSettings.PROJECT_NAME) == "project_name"
-        assert str(AcProjectSettings.PROJECT_NAME_URLSAFE) == "project_name_url_safe"
-        assert str(AcProjectSettings.PROJECT_ARCHES_VERSION) == "arches_version"
+        assert str(AcProjectAttributes.PROJECT_NAME) == "project_name"
+        assert str(AcProjectAttributes.PROJECT_NAME_URLSAFE) == "project_name_url_safe"
+        assert str(AcProjectAttributes.PROJECT_ARCHES_VERSION) == "arches_version"

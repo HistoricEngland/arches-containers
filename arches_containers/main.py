@@ -6,7 +6,7 @@ from slugify import slugify
 from arches_containers import AC_VERSION as arches_containers_version
 from arches_containers.manage import compose_project, initialize_project, status
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
-from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject, AcProjectSettings
+from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject, AcProjectAttributes
 from arches_containers.utils.create_launch_config import generate_launch_config
 from arches_containers.utils.logger import AcOutputManager
 
@@ -20,6 +20,7 @@ def main():
     parser_create = subparsers.add_parser("create", help="Create a new container project", formatter_class=parser.formatter_class)
     parser_create.add_argument("-p", "--project_name", required=True, help="The name of the project. This value will be slugified to lowercase with underscore separators")
     parser_create.add_argument("-v", "--version", "--ver", required=True, help="The arches version the project will be using (major.minor format)")
+    parser_create.add_argument("-r", "--repo_name", help="The name of the local repository folder to create for the project. Default is hyphen slugified project name e.g. arches-her.")
     parser_create.add_argument("-o", "--organization", default="archesproject", help="The GitHub organization of the arches repo (default: archesproject)")
     parser_create.add_argument("-br", "--branch", help="The branch of the arches repo to use. Default is the 'dev/<version>.x' branch.")
     parser_create.add_argument("--activate", action="store_true", help="Activate the project after creation.")
@@ -74,12 +75,12 @@ def main():
     # Sub-parser for the export command
     parser_export = subparsers.add_parser("export", help="Export a project to a given repository folder", formatter_class=parser.formatter_class)
     parser_export.add_argument("-p", "--project_name", help="The name of the project to export. Default is the active project.")
-    parser_export.add_argument("-r", "--repo_path", help="The path to the repository folder. Default is <workspace directory path>/<project_name>")
+    parser_export.add_argument("-r", "--repo_path", help="The path to the repository folder if different to the default.")
 
     # Sub-parser for the import command
     parser_import = subparsers.add_parser("import", help="Import a project from a given repository folder", formatter_class=parser.formatter_class)
     parser_import.add_argument("-p", "--project_name", required=True, help="The name of the project to import.")
-    parser_import.add_argument("-r", "--repo_path", help="The path to the repository folder. Default is <workspace directory path>/<project_name>")
+    parser_import.add_argument("-r", "--repo_path", help="The path to the repository folder if different to the default.")
 
     # Sub-parser for the status command
     parser_status = subparsers.add_parser("status", help="Check container status", formatter_class=parser.formatter_class)
@@ -115,9 +116,9 @@ def main():
             if hasattr(args, 'organization') or hasattr(args, 'branch'):
                 ac_project = ac_workspace.get_project(args.project_name)
                 if hasattr(args, 'organization') and args.organization:
-                    ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
+                    ac_project[AcProjectAttributes.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
                 if hasattr(args, 'branch') and args.branch:
-                    ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
+                    ac_project[AcProjectAttributes.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
                 ac_project.save()
 
             if hasattr(args, 'verbose') and args.verbose:
@@ -176,6 +177,7 @@ def main():
         if args.project_name == "" or args.project_name is None:
             try:
                 args.project_name = ac_settings.get_active_project_name()
+                
             except Exception as e:
                 AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
         repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)

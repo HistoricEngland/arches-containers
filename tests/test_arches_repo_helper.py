@@ -10,8 +10,8 @@ def mock_workspace():
 
 @pytest.fixture
 def mock_project_settings():
-    with patch('arches_containers.utils.arches_repo_helper.AcProjectSettings') as MockAcProjectSettings:
-        yield MockAcProjectSettings
+    with patch('arches_containers.utils.arches_repo_helper.AcProjectAttributes') as MockAcProjectAttributes:
+        yield MockAcProjectAttributes
 
 def test_get_repo_info(mock_workspace, mock_project_settings):
     # Arrange
@@ -39,14 +39,14 @@ from arches_containers.utils.arches_repo_helper import _get_repo_info
 class TestArchesRepoHelper(unittest.TestCase):
 
     @patch('arches_containers.utils.arches_repo_helper.AcWorkspace')
-    @patch('arches_containers.utils.arches_repo_helper.AcProjectSettings')
-    def test_get_repo_info(self, MockAcProjectSettings, MockAcWorkspace):
+    @patch('arches_containers.utils.arches_repo_helper.AcProjectAttributes')
+    def test_get_repo_info(self, MockAcProjectAttributes, MockAcWorkspace):
         # Arrange
         project_name = "test_project"
         mock_workspace = MockAcWorkspace.return_value
         mock_config = {
-            MockAcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value: "main",
-            MockAcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value: "test_org"
+            MockAcProjectAttributes.PROJECT_ARCHES_REPO_BRANCH.value: "main",
+            MockAcProjectAttributes.PROJECT_ARCHES_REPO_ORGANIZATION.value: "test_org"
         }
         mock_workspace.get_project.return_value = mock_config
 
