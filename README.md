@@ -1,5 +1,7 @@
 # Arches Containers
 
+> We are trialing the use of DeepWiki for developers to deepdive the code base (default branch only) [![Ask DeepWiki about the default branch](https://deepwiki.com/badge.svg)](https://deepwiki.com/HistoricEngland/arches-containers)
+
 ## Overview
 
 Arches Containers is a developer CLI tool to create and manage containerized Arches development environments. See [Arches](https://github.com/archesproject/arches) project for information related to the framework.
