@@ -25,28 +25,6 @@ services:
       stdin_open: true
       tty: true
     
-    ## - possible 
-    #{{project_urlsafe}}-bash:
-    #  profiles:
-    #    - livereload
-    #  container_name: {{project_urlsafe}}-bash
-    #  image: he/{{project}}:dev_build
-    #  command: ["bash"]
-    #  volumes:
-    #    - ../../arches:/web_root/arches
-    #    - ../../{{project_urlsafe}}:/web_root/{{project_urlsafe}}
-    #    - ./docker:/web_root/docker
-    #    - ../../{{project_urlsafe}}-package:/web_root/{{project_urlsafe}}_package
-    #    - ../../{{project_urlsafe}}-data:/web_root/{{project_urlsafe}}_data
-    #  env_file:
-    #    - ./docker/env_file.env
-    #  ports:
-    #    - 35729:35729      
-    #  depends_on:
-    #      - {{project_urlsafe}}
-    #  stdin_open: true
-    #  tty: true
-
     {{project_urlsafe}}-livereload:
       profiles:
         - livereload
