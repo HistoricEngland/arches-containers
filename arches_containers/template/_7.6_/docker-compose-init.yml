@@ -2,13 +2,13 @@
 services:
     {{project_urlsafe}}:
       container_name: {{project_urlsafe}}
-      image: he/{{project}}:dev_build
+      image: he/{{project}}:dev_base
       build:
         args:
           - "PROJ_NAME={{project}}"
           - "DOCKER_PATH=./.arches_containers/{{project}}/docker"
         context: ../..
-        dockerfile: ./.arches_containers/{{project}}/Dockerfile
+        dockerfile: ./.arches_containers/{{project}}/Dockerfile.base
       command: create_project
       volumes:
         - ../..:/web_root
