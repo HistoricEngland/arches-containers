@@ -13,10 +13,10 @@ services:
       command: run_arches
       volumes:
         - ../../arches:/web_root/arches
-        - ../../{{project_repo_directory}}:/web_root/{{project_repo_directory}}
+        - ../../{{project_repo_directory}}:/web_root/{{project}}
         - ./docker:/web_root/docker
-        - ../../{{project_repo_directory}}-package:/web_root/{{project_repo_directory}}_package
-        - ../../{{project_repo_directory}}-data:/web_root/{{project_repo_directory}}_data
+        - ../../{{project_repo_directory}}-package:/web_root/{{project}}_package
+        - ../../{{project_repo_directory}}-data:/web_root/{{project}}_data
       env_file:
         - ./docker/env_file.env
       ports:
@@ -33,7 +33,7 @@ services:
       command: run_livereload
       volumes:
         - ../../arches:/web_root/arches
-        - ../../{{project_repo_directory}}:/web_root/{{project_repo_directory}}
+        - ../../{{project_repo_directory}}:/web_root/{{project}}
       env_file:
         - ./docker/env_file.env
       ports:
@@ -49,7 +49,7 @@ services:
       command: run_webpack
       volumes:
         - ../../arches:/web_root/arches
-        - ../../{{project_repo_directory}}:/web_root/{{project_repo_directory}}
+        - ../../{{project_repo_directory}}:/web_root/{{project}}
       env_file:
         - ./docker/env_file.env
       ports:
