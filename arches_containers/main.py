@@ -20,7 +20,7 @@ def main():
     parser_create = subparsers.add_parser("create", help="Create a new container project", formatter_class=parser.formatter_class)
     parser_create.add_argument("-p", "--project_name", required=True, help="The name of the project. This value will be slugified to lowercase with underscore separators")
     parser_create.add_argument("-v", "--version", "--ver", required=True, help="The arches version the project will be using (major.minor format)")
-    parser_create.add_argument("-r", "--repo_name", help="The name of the local repository folder to create for the project. Default is hyphen slugified project name e.g. arches-her.")
+    parser_create.add_argument("-r", "--repo_name", help="The name of the local repository folder to create for the project. v7.6 and higher only.")
     parser_create.add_argument("-o", "--organization", default="archesproject", help="The GitHub organization of the arches repo (default: archesproject)")
     parser_create.add_argument("-br", "--branch", help="The branch of the arches repo to use. Default is the 'dev/<version>.x' branch.")
     parser_create.add_argument("--activate", action="store_true", help="Activate the project after creation.")
