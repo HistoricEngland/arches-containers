@@ -88,11 +88,12 @@ Steps to create a new container project.
 
 ```sh
 cd /path/to/workspace
-act create -p <project_name> -v <version> [-o <organization>] [--activate]
+act create -p <project_name> -v <version> [-r <repo_name>] [-o <organization>] [--activate]
 ```
 
 - `-p`, `--project_name`: The name of the project. This value will be slugified to lowercase with underscore separators.
 - `-v`, `--version`, `--ver`: The Arches version the project will be using (major.minor format).
+- `-r`, `--repo_name`: The name of the local repository folder to create for the project. v7.6 and higher only.
 - `-o`, `--organization`: The GitHub organization of the Arches repo (default: archesproject).
 - `--activate`: Activate the project after creation. If it is the first project then it will be activated by default.
 
@@ -227,7 +228,7 @@ act export [-p <project_name>] [-r <repo_path>]
 ```
 
 - `-p`, `--project_name`: The name of the project to export. Default is the active project.
-- `-r`, `--repo_path`: The path to the repository folder. Default is `<workspace directory path>/<project_name>`.
+- `-r`, `--repo_path`: The path to the repository folder if different to the default.
 
 ### Import a Project
 
@@ -238,7 +239,7 @@ act import -p <project_name> [-r <repo_path>]
 ```
 
 - `-p`, `--project_name`: The name of the project to import. It will look for a folder at the path  in the repository folder.
-- `-r`, `--repo_path`: OPTIONAL - Use this is the name of the repo directory does not match the pattern `<workspace_path>/<project_name>`. This path **must** contain a folder called `.ac_<project_name>`.
+- `-r`, `--repo_path`: The path to the repository folder if different to the default.
 
 **example:**
 
@@ -298,11 +299,14 @@ The project configuration file `config.json` is used to store default values for
 {
   "project_name": "arches_her_project",
   "project_name_url_safe": "archesherproject",
+  "project_repo_directory": "arches-her-project",
     "arches_version": "7.5",
     "arches_repo_organization": "archesproject",
     "arches_repo_branch": "dev/7.5.x"
 }
 ```
+
+The `project_repo_directory` stores the name of the local repository folder for the project and supports hyphenated (kebab-case) directory names for Arches v7.6+.
 
 When in the project directory, there are two files that you may want to configure:
 
