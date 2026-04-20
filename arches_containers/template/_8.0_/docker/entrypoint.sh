@@ -57,7 +57,8 @@ db_exists() {
 }
 
 project_exists() {
-	if [[ -d ${APP_ROOT}/${ARCHES_PROJECT} ]] && [[ "$(ls ${APP_ROOT}/${ARCHES_PROJECT})" ]]; then
+	if [[ -d ${APP_ROOT}/${ARCHES_PROJECT} ]] && [[ "$(ls ${APP_ROOT}/${ARCHES_PROJECT})" ]] \
+		|| [[ -d ${WEB_ROOT}/${ARCHES_PROJECT_REPO_DIRECTORY} ]] && [[ "$(ls ${WEB_ROOT}/${ARCHES_PROJECT_REPO_DIRECTORY})" ]]; then
 		return 0
 	else
 		return 1
@@ -93,7 +94,8 @@ create_arches_project_only(){
 	echo ""
 	if ! project_exists; then
 		cd ${WEB_ROOT}
-		python3 ${WEB_ROOT}/arches/arches/install/arches_admin.py startproject ${ARCHES_PROJECT}
+		mkdir -p ${ARCHES_PROJECT_REPO_DIRECTORY}
+		python3 ${WEB_ROOT}/arches/arches/install/arches_admin.py startproject ${ARCHES_PROJECT} -d ${ARCHES_PROJECT_REPO_DIRECTORY}
 		echo "...Checking directories are created..."
 		sleep 2
 		if ! project_exists; then
