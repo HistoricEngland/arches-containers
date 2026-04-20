@@ -57,12 +57,19 @@ db_exists() {
 }
 
 project_exists() {
-	if [[ -d ${APP_ROOT}/${ARCHES_PROJECT} ]] && [[ "$(ls ${APP_ROOT}/${ARCHES_PROJECT})" ]] \
-		|| [[ -d ${WEB_ROOT}/${ARCHES_PROJECT_REPO_DIRECTORY} ]] && [[ "$(ls ${WEB_ROOT}/${ARCHES_PROJECT_REPO_DIRECTORY})" ]]; then
+	if [[ -d ${APP_ROOT}/${ARCHES_PROJECT} ]]; then
+		if [[ "$(ls ${APP_ROOT}/${ARCHES_PROJECT})" ]]; then
 		return 0
-	else
-		return 1
+		fi
 	fi
+
+	if [[ -d ${WEB_ROOT}/${ARCHES_PROJECT_REPO_DIRECTORY} ]]; then
+		if [[ "$(ls ${WEB_ROOT}/${ARCHES_PROJECT_REPO_DIRECTORY})" ]]; then
+			return 0
+		fi
+	fi
+
+	return 1
 }
 
 #### Install
