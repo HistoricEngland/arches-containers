@@ -3,11 +3,13 @@ USER root
 
 ## Build Args
 ARG PROJ_NAME=project
+ARG PROJ_REPO_NAME={{project_repo_directory}}
 ARG ARCHES_PATH=./arches
 ARG DOCKER_PATH=./docker
 
 ## Setting default environment variables
 ENV ARCHES_PROJECT=$PROJ_NAME
+ENV ARCHES_PROJECT_REPO_DIRECTORY=$PROJ_REPO_NAME
 ENV WEB_ROOT=/web_root
 ENV APP_ROOT=${WEB_ROOT}/${ARCHES_PROJECT}
 ENV PKG_ROOT=${APP_ROOT}_package
