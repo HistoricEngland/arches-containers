@@ -4,5 +4,5 @@
     "project_repo_directory": "{{project_repo_directory}}",
     "arches_version": "7.6",
     "arches_repo_organization": "archesproject",
-    "arches_repo_branch": "dev/7.6.x"
+    "arches_repo_branch": "stable/7.6.22"
 }
