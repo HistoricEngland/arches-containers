@@ -1,13 +1,13 @@
 import os
 import subprocess
-from arches_containers.utils.workspace import AcWorkspace, AcProjectSettings
+from arches_containers.utils.workspace import AcWorkspace, AcProjectAttributes
 from arches_containers.utils.logger import AcOutputManager
 
 def _get_repo_info(project_name):
     ac_workspace = AcWorkspace()
     ac_project = ac_workspace.get_project(project_name)
-    branch = ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value]
-    repo_url = f"https://github.com/{ac_project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value]}/arches.git"
+    branch = ac_project[AcProjectAttributes.PROJECT_ARCHES_REPO_BRANCH.value]
+    repo_url = f"https://github.com/{ac_project[AcProjectAttributes.PROJECT_ARCHES_REPO_ORGANIZATION.value]}/arches.git"
     clone_dir = os.path.join(ac_workspace.path, "arches")
     return (ac_project, repo_url, clone_dir, branch)
 
@@ -27,6 +27,12 @@ def clone_and_checkout_repo(project_name, verbose=False):
 
 def change_arches_branch(project_name, verbose=False):
     ac_project, repo_url, clone_dir, branch = _get_repo_info(project_name)
+
+    # check the arches repo exists
+    if not os.path.exists(clone_dir):
+        clone_and_checkout_repo(project_name, verbose)
+        return
+
     os.chdir(clone_dir)
     result = subprocess.run(
         ["git", "checkout", branch],

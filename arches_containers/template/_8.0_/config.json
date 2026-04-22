@@ -1,7 +1,8 @@
 {
     "project_name": "{{project}}",
     "project_name_url_safe": "{{project_urlsafe}}",
+    "project_repo_directory": "{{project_repo_directory}}",
     "arches_version": "8.0",
     "arches_repo_organization": "archesproject",
-    "arches_repo_branch": "dev/8.0.x"
+    "arches_repo_branch": "stable/8.0.10"
 }

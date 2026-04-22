@@ -1,18 +1,5 @@
 #!/bin/bash
 
-# APP and YARN folder locations
-# ${WEB_ROOT} and ${ARCHES_ROOT} is defined in the Dockerfile, ${ARCHES_PROJECT} in env_file.env
-if [[ -z ${ARCHES_PROJECT} ]]; then
-	APP_FOLDER=${ARCHES_ROOT}
-	PACKAGE_JSON_FOLDER=${ARCHES_ROOT}
-else
-	APP_FOLDER=${WEB_ROOT}/${ARCHES_PROJECT}
-	PACKAGE_JSON_FOLDER=${APP_FOLDER}
-fi
-
-# SET DEFAULT WORKING DIRECTORY
-cd ${APP_FOLDER}
-
 #Utility functions that check db status
 wait_for_db() {
 	echo "Testing if database server is up..."
@@ -69,18 +56,33 @@ db_exists() {
 	fi
 }
 
+project_exists() {
+	if [[ -d ${APP_ROOT}/${ARCHES_PROJECT} ]]; then
+		if [[ "$(ls ${APP_ROOT}/${ARCHES_PROJECT})" ]]; then
+		return 0
+		fi
+	fi
+
+	if [[ -d ${WEB_ROOT}/${ARCHES_PROJECT_REPO_DIRECTORY} ]]; then
+		if [[ "$(ls ${WEB_ROOT}/${ARCHES_PROJECT_REPO_DIRECTORY})" ]]; then
+			return 0
+		fi
+	fi
+
+	return 1
+}
 
 #### Install
 init_arches() {
 	echo "Checking if Arches project "${ARCHES_PROJECT}" exists..."
-	if [[ ! -d ${APP_FOLDER}/${ARCHES_PROJECT} ]] || [[ ! "$(ls ${APP_FOLDER}/${ARCHES_PROJECT})" ]]; then
+	if ! project_exists; then
 		echo ""
-		echo "----- Custom Arches project '${ARCHES_PROJECT}' does not exist. -----"
+		echo "----- Arches project '${ARCHES_PROJECT}' does not exist. -----"
 		#echo "----- Use the "create_project" command to create the project and then restart the container -----"
 		echo ""
 		create_arches_project
 	else
-		echo "Custom Arches project '${ARCHES_PROJECT}' exists."
+		echo "Arches project '${ARCHES_PROJECT}' exists."
 	fi
 
 	wait_for_db
@@ -97,15 +99,26 @@ create_arches_project_only(){
 	echo ""
 	echo "----- Creating '${ARCHES_PROJECT}'... -----"
 	echo ""
-
-	cd ${WEB_ROOT}
-	python3 ${WEB_ROOT}/arches/arches/install/arches_admin.py startproject ${ARCHES_PROJECT}
-	APP_FOLDER=${WEB_ROOT}/${ARCHES_PROJECT}
+	if ! project_exists; then
+		cd ${WEB_ROOT}
+		mkdir -p ${ARCHES_PROJECT_REPO_DIRECTORY}
+		python3 ${WEB_ROOT}/arches/arches/install/arches_admin.py startproject ${ARCHES_PROJECT} -d ${ARCHES_PROJECT_REPO_DIRECTORY}
+		echo "...Checking directories are created..."
+		sleep 2
+		if ! project_exists; then
+			echo "Something went wrong when creating your Arches project: ${ARCHES_PROJECT}."
+			echo "Exiting..."
+			exit 1
+		fi
+		echo "----- '${ARCHES_PROJECT}' created. -----"
+	else 
+		echo "Arches project '${ARCHES_PROJECT}' exists."
+	fi
 }
 
 create_arches_project() {
 	echo "Checking if Arches project "${ARCHES_PROJECT}" exists..."
-	if [[ ! -d ${APP_FOLDER}/${ARCHES_PROJECT} ]] || [[ ! "$(ls ${APP_FOLDER}/${ARCHES_PROJECT})" ]]; then
+	if ! project_exists; then
 		echo ""
 		echo "----- Creating '${ARCHES_PROJECT}'... -----"
 		echo ""
@@ -126,15 +139,15 @@ create_arches_project() {
 
 # Yarn
 install_npm_components() {
-	cd ${PACKAGE_JSON_FOLDER}
+	cd ${APP_ROOT}
 	npm install
 }
 
 #### Misc
 copy_settings_local() {
 	# The settings_local.py in ${ARCHES_ROOT}/arches/ gets ignored if running manage.py from a custom Arches project instead of Arches core app
-	echo "Copying ${WEB_ROOT}/docker/settings_local.py to ${APP_FOLDER}/${ARCHES_PROJECT}/settings_local.py..."
-	yes | cp ${WEB_ROOT}/docker/settings_local.py ${APP_FOLDER}/${ARCHES_PROJECT}/settings_local.py
+	echo "Copying ${WEB_ROOT}/docker/settings_local.py to ${APP_ROOT}/${ARCHES_PROJECT}/settings_local.py..."
+	yes | cp ${WEB_ROOT}/docker/settings_local.py "${APP_ROOT}/${ARCHES_PROJECT}/settings_local.py"
 }
 
 #### Run commands
@@ -148,7 +161,7 @@ run_migrations() {
 	echo ""
 	echo "----- RUNNING DATABASE MIGRATIONS -----"
 	echo ""
-	cd ${APP_FOLDER}
+	cd ${APP_ROOT}
 	python3 manage.py migrate
 }
 
@@ -156,10 +169,9 @@ run_setup_db() {
 	echo ""
 	echo "----- RUNNING SETUP_DB -----"
 	echo ""
-	if [[ -d ${WEB_ROOT}/${ARCHES_PROJECT}/pkg ]];then
-		python3 manage.py packages -o load_package -s ${ARCHES_PROJECT}/pkg -db -dev -y
-	else
-		cd ${WEB_ROOT}/${ARCHES_PROJECT}
+	if ! run_load_package;then
+		cd ${APP_ROOT}
+		echo "Running setup_db command..."
 		python3 manage.py setup_db --force
 	fi
 }
@@ -168,9 +180,13 @@ run_load_package() {
 	echo ""
 	echo "----- *** LOADING PACKAGE: ${ARCHES_PROJECT} *** -----"
 	echo ""
-	cd ${APP_FOLDER}
+	cd ${APP_ROOT}
 	if [[ -d ${ARCHES_PROJECT}/pkg ]];then
 		python3 manage.py packages -o load_package -s ${ARCHES_PROJECT}/pkg -db -dev -y
+		return 0
+	else 
+		echo "Package directory not found for ${ARCHES_PROJECT}."
+		return 1
 	fi
 }
 
@@ -179,7 +195,7 @@ run_django_server() {
 	echo ""
 	echo "----- *** RUNNING DJANGO DEVELOPMENT SERVER *** -----"
 	echo ""
-	cd ${APP_FOLDER}
+	cd ${APP_ROOT}
     echo "Running Django"
 	exec sh -c "pip install debugpy -t /tmp && python3 /tmp/debugpy --listen 0.0.0.0:5678 manage.py runserver 0.0.0.0:${DJANGO_PORT}"
 }
@@ -188,7 +204,7 @@ run_livereload_server() {
 	echo ""
 	echo "----- *** RUNNING LIVERELOAD SERVER *** -----"
 	echo ""
-	cd ${APP_FOLDER}
+	cd ${APP_ROOT}
     echo "Running livereload"
     exec sh -c "python3 manage.py developer livereload --livereloadhost 0.0.0.0"
 }
@@ -213,9 +229,9 @@ run_webpack() {
 	echo ""
 	echo "----- *** RUNNING WEBPACK DEVELOPMENT SERVER *** -----"
 	echo ""
-	cd ${APP_FOLDER}
+	cd ${APP_ROOT}
     echo "Running Webpack"
-	exec sh -c "wait-for-it {{project_urlsafe}}:${DJANGO_PORT} -t 1200 && cd /web_root/{{project}} && npm install && npm start"
+	exec sh -c "cd ${APP_ROOT} && npm install && npm run build_development && wait-for-it ${ARCHES_PROJECT_REPO_DIRECTORY}:${DJANGO_PORT} -t 1200 && npm start"
 }
 
 ### Starting point ###
@@ -266,7 +282,7 @@ do
 			display_help
 		;;
 		*)
-            cd ${APP_FOLDER}
+            cd ${APP_ROOT}
 			"$@"
 			exit 0
 		;;

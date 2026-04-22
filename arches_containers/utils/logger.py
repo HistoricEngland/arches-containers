@@ -27,6 +27,8 @@ _█████╗        ██████╗        ████████
 ╚═╝  ╚═╝rches  ╚═════╝ontainer   ╚═╝ools  v{arches_containers_version}
 """
 
+MICRO_BANNER = f" Arches Container Tools CLI v{arches_containers_version} "
+
 def create_banner():
     """Display the ASCII art banner."""
     # Create gradient effect with different colors
@@ -49,7 +51,8 @@ class _RichSpinner:
         self.console = Console()
         #self.console.rule(f"Arches Containers CLI v{arches_containers.AC_VERSION}")
         self.console.rule(style="bold red")
-        self.console.print(Align.left(create_banner()))
+        # self.console.print(Align.left(create_banner()))
+        self.console.print(Align.left(Text(MICRO_BANNER, style="bold red")))
         self.console.rule(style="bold red")
         self.text = text
         self._spinner = RichSpinner("dots", text=self.text)

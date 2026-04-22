@@ -44,6 +44,7 @@ def _adjust_platform_lines(target_path, uncomment: bool):
 TEMPLATE_PATH = os.path.join(_get_ac_module_path(), "template")
 REPLACE_TOKEN = "{{project}}"
 REPLACE_TOKEN_URLSAFE = "{{project_urlsafe}}"
+REPLACE_TOKEN_REPO = "{{project_repo_directory}}"
 
 
 DEFAULT_AC_SETTINGS = {
@@ -54,11 +55,12 @@ DEFAULT_AC_SETTINGS = {
 
 # PUBLIC CLASSES
 
-class AcProjectSettings(Enum):
+class AcProjectAttributes(Enum):
     def __str__(self):
         return self.value
     PROJECT_NAME = "project_name"
     PROJECT_NAME_URLSAFE = "project_name_url_safe"
+    PROJECT_REPO_DIRECTORY = "project_repo_directory"
     PROJECT_ARCHES_VERSION = "arches_version"
     PROJECT_ARCHES_REPO_ORGANIZATION = "arches_repo_organization"
     PROJECT_ARCHES_REPO_BRANCH = "arches_repo_branch"
@@ -169,6 +171,13 @@ class AcSettings:
             return project.project_name
         return ""
     
+    def get_active_project_repo_name(self):
+        ''' Returns the active project directory. '''
+        project = self.get_active_project()
+        if project:
+            return project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value] 
+        return ""
+    
     def _get_settings_path(self):
         '''
         Returns the path to the settings.json file.
@@ -230,9 +239,9 @@ class AcWorkspace:
         return None
 
     def _get_urlsafe_project_name(self, project_name):
-        return slugify(text=project_name, separator="")
+        return slugify(text=project_name, separator="-")
 
-    def _create_proj_directory(self, project_name, version):
+    def _create_proj_directory(self, project_name, version, repo_name=None):
         template_folder = self._get_template_folder(version)
         if template_folder is None:
             AcOutputManager.fail(f"Arches version {version} not supported.")
@@ -244,7 +253,7 @@ class AcWorkspace:
             exit(1)
 
         shutil.copytree(template_folder, target_path)
-        self._replace_projectname_placeholder(project_name, target_path)
+        self._replace_projectname_placeholder(project_name, target_path, repo_name)
 
         # Adjust platform lines for arm64
         if platform.machine() == "arm64" or platform.machine() == "aarch64":
@@ -256,7 +265,7 @@ class AcWorkspace:
             ac_settings.set_active_project(project_name)
         return target_path
         
-    def _replace_projectname_placeholder(self,project_name, target_path):
+    def _replace_projectname_placeholder(self,project_name, target_path, repo_name=None):
         for dname, dirs, files in os.walk(target_path):
             for fname in files:
                 fpath = os.path.join(dname, fname)
@@ -264,8 +273,35 @@ class AcWorkspace:
                     s = f.read()
                 s = s.replace(REPLACE_TOKEN, project_name)
                 s = s.replace(REPLACE_TOKEN_URLSAFE, self._get_urlsafe_project_name(project_name))
+                s = s.replace(REPLACE_TOKEN_REPO, repo_name if repo_name else self._get_urlsafe_project_name(project_name))
                 with open(fpath, "w") as f:
                     f.write(s)
+
+    def _get_project_repo_name(self, project_name):
+        # get the project and check in the project_repo_directory setting
+        project = self.get_project(project_name)
+        #check the AcProjectAttributes.PROJECT_REPO_DIRECTORY setting exists as this has been introduced in 1.1.0
+        if AcProjectAttributes.PROJECT_REPO_DIRECTORY.value in project._config:
+            project_repo_directory = project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value]
+        else:
+            # if it doesn't exist then it is likely that the repo exists from before using the prject_name as the directory
+            # check for the project name in the workspace
+            if os.path.exists(os.path.join(self._path, project_name)):
+                project_repo_directory = project_name
+            else:
+                # if the arches_version is less than 8.0, use the project_name as the directory else the urlsafe version
+                arches_version = project[AcProjectAttributes.PROJECT_ARCHES_VERSION.value]
+                if float(arches_version) < 8.0:
+                    project_repo_directory = project_name
+                else:
+                    project_repo_directory = self._get_urlsafe_project_name(project_name)
+
+            project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value] = project_repo_directory
+            project.save()
+
+    def _get_project_repo_path(self, project_name):
+        return os.path.join(self._path(), self._get_project_repo_name(project_name))
+
 
     # PUBLIC METHODS
     def get_project(self, project_name) -> AcProject:
@@ -286,14 +322,22 @@ class AcWorkspace:
         # the project must be a valid slug where the only allowed characters are letters, numbers, and underscores. It must start with a letter. it must be lowercase.
         # create a function to slugify the project name
         project_name = slugify(text=project_name, separator="_")
+        urlsafe_name = self._get_urlsafe_project_name(project_name)
+        repo_name = args.repo_name if args.repo_name else urlsafe_name
 
-        self._create_proj_directory(project_name, args.version)
+        self._create_proj_directory(project_name, args.version, repo_name)
+
         # update the project config if organization is provided in args
         project = self.get_project(project_name)
+        project[AcProjectAttributes.PROJECT_NAME.value] = project_name
+        project[AcProjectAttributes.PROJECT_NAME_URLSAFE.value] = urlsafe_name
+        project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value] = repo_name
+
+        # arg overrides
         if args.organization:
-            project[AcProjectSettings.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
+            project[AcProjectAttributes.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
         if args.branch:
-            project[AcProjectSettings.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
+            project[AcProjectAttributes.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
         
         if args.organization or args.branch:
             project.save()
