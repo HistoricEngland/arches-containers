@@ -373,10 +373,10 @@ The key principles are:
 
 While we work out the contribution guyideline, the following steps can be followed:
 
-1. Fork the repository and create your branch from `main`.
-1. Raise a ticket with details of the enhancement or bug being fixed.
-1. Write or update tests as necessary. Please ensure that all tests pass before submitting a pull request.
-1. Submit a pull request with a clear description of the changes.
+1. Fork the repository and create your branch from the deafult branch (`dev/a.b.x`).
+2. Raise a ticket with details of the enhancement or bug being fixed.
+3. Write or update tests as necessary. Please ensure that all tests pass before submitting a pull request.
+4. Submit a pull request with a clear description of the changes.
 
 ## License
 
