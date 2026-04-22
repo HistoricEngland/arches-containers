@@ -3,6 +3,7 @@ import os
 import shutil
 import json
 import platform
+from types import SimpleNamespace
 from arches_containers.utils.workspace import (
     AcWorkspace, 
     AcSettings, 
@@ -10,6 +11,15 @@ from arches_containers.utils.workspace import (
     AcProjectAttributes,
     AC_DIRECTORY_NAME
 )
+
+
+def make_create_args(version="7.6", organization=None, branch=None, repo_name=None):
+    return SimpleNamespace(
+        version=version,
+        organization=organization,
+        branch=branch,
+        repo_name=repo_name,
+    )
 
 @pytest.fixture
 def temp_workspace(tmp_path):
@@ -22,13 +32,8 @@ def temp_workspace(tmp_path):
 @pytest.fixture
 def workspace_with_project(temp_workspace):
     """Creates a workspace with a test project"""
-    class Args:
-        version = "7.6"
-        organization = None
-        branch = None
-
     project_name = "test_project"
-    temp_workspace.create_project(project_name, Args())
+    temp_workspace.create_project(project_name, make_create_args())
     return temp_workspace, project_name
 
 def get_platform_line(yaml_path):
@@ -46,17 +51,14 @@ class TestAcWorkspace:
 
     @pytest.mark.parametrize("version", ["7.6", "8.0"])
     def test_create_project(self, temp_workspace, monkeypatch, version):
-        class Args:
-            pass
-        Args.version = version
-        Args.organization = "archesproject"
-        Args.branch = "main"
+        args = make_create_args(version=version, organization="archesproject", branch="main")
         # Simulate arm64
         monkeypatch.setattr(platform, "machine", lambda: "arm64")
-        project = temp_workspace.create_project("test_project", Args())
+        project = temp_workspace.create_project("test_project", args)
         assert os.path.exists(os.path.join(temp_workspace._get_ac_directory_path(), "test_project"))
         assert project["arches_repo_organization"] == "archesproject"
         assert project["arches_repo_branch"] == "main"
+        assert project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value] == "test-project"
         # Check platform line uncommented for arm64 if present
         compose_path = os.path.join(temp_workspace._get_ac_directory_path(), "test_project", "docker-compose-dependencies.yml")
         line = get_platform_line(compose_path)
@@ -64,11 +66,21 @@ class TestAcWorkspace:
             assert line.strip().startswith("platform: linux/arm64") or line.strip().startswith("#platform: linux/arm64")
         # Simulate amd64
         monkeypatch.setattr(platform, "machine", lambda: "x86_64")
-        project2 = temp_workspace.create_project("test_project2", Args())
+        project2 = temp_workspace.create_project("test_project2", args)
+        assert project2[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value] == "test-project2"
         compose_path2 = os.path.join(temp_workspace._get_ac_directory_path(), "test_project2", "docker-compose-dependencies.yml")
         line2 = get_platform_line(compose_path2)
         if line2 is not None:
             assert line2.strip().startswith("#platform: linux/arm64")
+
+    @pytest.mark.parametrize("version", ["7.6", "8.0"])
+    def test_create_project_with_custom_repo_name(self, temp_workspace, version):
+        project = temp_workspace.create_project(
+            "test_project",
+            make_create_args(version=version, repo_name="custom-repo"),
+        )
+
+        assert project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value] == "custom-repo"
 
     @pytest.mark.parametrize("version", ["7.6", "8.0"])
     def test_export_project(self, workspace_with_project, tmp_path, monkeypatch, version):
