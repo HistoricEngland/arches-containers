@@ -106,7 +106,9 @@ def initialize_project(project_name, verbose=False):
         AcOutputManager.fail(f"{DOCKER_COMPOSE_INIT_FILE} not found in {project_path}.")
 
     os.chdir(project_path)
-    command = ["docker", "compose", "-f", compose_file_path, "up", "--exit-code-from", config["project_name_url_safe"]]
+    project_hash = config.get_project_hash()
+    service_name = f"{config['project_name_url_safe']}-{project_hash}" if project_hash else config["project_name_url_safe"]
+    command = ["docker", "compose", "-f", compose_file_path, "up", "--exit-code-from", service_name]
     if verbose:
         result = subprocess.run(command)
         if result.returncode == 0:
