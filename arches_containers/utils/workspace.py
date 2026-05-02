@@ -49,6 +49,17 @@ REPLACE_TOKEN_REPO = "{{project_repo_directory}}"
 REPLACE_TOKEN_HASH = "{{project_hash}}"
 
 
+def _version_supports_project_hash(arches_version: str) -> bool:
+    """Return True only for Arches versions that support project_hash tokens (>= 7.6)."""
+    try:
+        parts = arches_version.split(".")
+        major = int(parts[0])
+        minor = int(parts[1]) if len(parts) > 1 else 0
+    except (ValueError, AttributeError, IndexError):
+        return False
+    return (major, minor) >= (7, 6)
+
+
 def _generate_project_hash(project_path: str) -> str:
     # SHA1 is used here solely for generating a short deterministic identifier,
     # not for any security or cryptographic purpose.
@@ -104,7 +115,13 @@ class AcProject:
     def get_project_path(self):
         return self._path
 
+    def supports_project_hash(self) -> bool:
+        arches_version = self._config.get(AcProjectAttributes.PROJECT_ARCHES_VERSION.value, "")
+        return _version_supports_project_hash(arches_version)
+
     def get_project_hash(self) -> str:
+        if not self.supports_project_hash():
+            return ""
         return self._config.get(AcProjectAttributes.PROJECT_HASH.value, "")
 
 class AcSettings:
@@ -346,7 +363,8 @@ class AcWorkspace:
         project[AcProjectAttributes.PROJECT_NAME.value] = project_name
         project[AcProjectAttributes.PROJECT_NAME_URLSAFE.value] = urlsafe_name
         project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value] = repo_name
-        project[AcProjectAttributes.PROJECT_HASH.value] = project_hash
+        if _version_supports_project_hash(args.version):
+            project[AcProjectAttributes.PROJECT_HASH.value] = project_hash
 
         # arg overrides
         if args.organization:

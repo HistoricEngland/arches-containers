@@ -12,6 +12,7 @@ from arches_containers.utils.workspace import (
     AC_DIRECTORY_NAME,
     REPLACE_TOKEN_HASH,
     _generate_project_hash,
+    _version_supports_project_hash,
 )
 
 
@@ -175,6 +176,16 @@ class TestAcProject:
         del project._config[AcProjectAttributes.PROJECT_HASH.value]
         assert project.get_project_hash() == ""
 
+    def test_get_project_hash_ignored_for_pre_7_6_even_if_present(self, temp_workspace):
+        project_name = "legacy_old_version"
+        temp_workspace.create_project(project_name, make_create_args(version="7.5"))
+        project = temp_workspace.get_project(project_name)
+        project[AcProjectAttributes.PROJECT_HASH.value] = "abcde"
+        project.save()
+
+        reloaded = temp_workspace.get_project(project_name)
+        assert reloaded.get_project_hash() == ""
+
 class TestGenerateProjectHash:
     def test_hash_is_five_chars(self):
         h = _generate_project_hash("/some/path/to/project")
@@ -200,6 +211,12 @@ class TestProjectHashInTemplates:
         project_hash = project.get_project_hash()
         assert len(project_hash) == 5
 
+    @pytest.mark.parametrize("version", ["7.5", "7.4"])
+    def test_pre_7_6_project_hash_is_ignored(self, temp_workspace, version):
+        project = temp_workspace.create_project("legacy_hash_test", make_create_args(version=version))
+        assert _version_supports_project_hash(version) is False
+        assert project.get_project_hash() == ""
+
     @pytest.mark.parametrize("version", ["7.6", "8.0"])
     def test_no_hash_token_remains_in_files(self, temp_workspace, version):
         temp_workspace.create_project("myhashproj", make_create_args(version=version))
@@ -222,22 +239,21 @@ class TestProjectHashInTemplates:
 
     @pytest.mark.parametrize("version", ["7.5", "7.4"])
     def test_older_templates_unaffected(self, temp_workspace, version):
-        # Older templates do not have {{project_hash}} tokens in their compose files,
-        # but a hash is still generated and stored in config.json for the new project.
+        # Older templates do not have {{project_hash}} tokens and should ignore hash usage.
         project = temp_workspace.create_project("oldproj", make_create_args(version=version))
         project_hash = project.get_project_hash()
-        assert isinstance(project_hash, str)
-        assert len(project_hash) == 5
-        # Verify the hash is persisted in config.json
+        assert project_hash == ""
+        # Verify config remains backward compatible for old templates.
         reloaded = temp_workspace.get_project("oldproj")
-        assert reloaded.get_project_hash() == project_hash
+        assert reloaded.get_project_hash() == ""
+        assert AcProjectAttributes.PROJECT_HASH.value not in reloaded._config
         # Verify compose files do NOT contain the hash (old templates don't use it)
         project_path = os.path.join(temp_workspace._get_ac_directory_path(), "oldproj")
         deps_path = os.path.join(project_path, "docker-compose-dependencies.yml")
         if os.path.exists(deps_path):
             with open(deps_path) as f:
                 content = f.read()
-            assert project_hash not in content
+            assert REPLACE_TOKEN_HASH not in content
 
 class TestAcProjectAttributes:
     def test_project_settings_enum(self):
