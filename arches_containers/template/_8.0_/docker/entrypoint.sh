@@ -231,7 +231,7 @@ run_webpack() {
 	echo ""
 	cd ${APP_ROOT}
     echo "Running Webpack"
-	exec sh -c "cd ${APP_ROOT} && npm install && npm run build_development && wait-for-it ${ARCHES_PROJECT_REPO_DIRECTORY}:${DJANGO_PORT} -t 1200 && npm start"
+	exec sh -c "cd ${APP_ROOT} && npm install && wait-for-it ${PUBLIC_SERVER_PROJECT_NAME}:${DJANGO_PORT} -t 1200 && npm run build_development && npm start"
 }
 
 ### Starting point ###
