@@ -337,14 +337,14 @@ class AcWorkspace:
         urlsafe_name = self._get_urlsafe_project_name(project_name)
         repo_name = args.repo_name if args.repo_name else urlsafe_name
 
-        self._create_proj_directory(project_name, args.version, repo_name)
+        target_path, project_hash = self._create_proj_directory(project_name, args.version, repo_name)
 
-        # update the project config if organization is provided in args
+        # update the project config
         project = self.get_project(project_name)
         project[AcProjectAttributes.PROJECT_NAME.value] = project_name
         project[AcProjectAttributes.PROJECT_NAME_URLSAFE.value] = urlsafe_name
         project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value] = repo_name
-        project[AcProjectAttributes.PROJECT_HASH.value] = project.get_project_hash()
+        project[AcProjectAttributes.PROJECT_HASH.value] = project_hash
 
         # arg overrides
         if args.organization:
@@ -352,6 +352,7 @@ class AcWorkspace:
         if args.branch:
             project[AcProjectAttributes.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
         
+        # always save to persist project_hash and any other in-memory changes
         project.save()
         
         AcOutputManager.success(f"Project '{project_name}' created successfully.")

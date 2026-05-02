@@ -222,10 +222,19 @@ class TestProjectHashInTemplates:
 
     @pytest.mark.parametrize("version", ["7.5", "7.4"])
     def test_older_templates_unaffected(self, temp_workspace, version):
-        # Older templates do not have project_hash in config
+        # Older templates do not have {{project_hash}} tokens in their compose files,
+        # but a hash is still generated and stored in config.json for the new project.
         project = temp_workspace.create_project("oldproj", make_create_args(version=version))
-        # get_project_hash() should return "" for legacy (no key in config)
-        assert project.get_project_hash() == ""
+        project_hash = project.get_project_hash()
+        assert isinstance(project_hash, str)
+        assert len(project_hash) == 5
+        # Verify compose files do NOT contain the hash (old templates don't use it)
+        project_path = os.path.join(temp_workspace._get_ac_directory_path(), "oldproj")
+        deps_path = os.path.join(project_path, "docker-compose-dependencies.yml")
+        if os.path.exists(deps_path):
+            with open(deps_path) as f:
+                content = f.read()
+            assert project_hash not in content
 
 class TestAcProjectAttributes:
     def test_project_settings_enum(self):
