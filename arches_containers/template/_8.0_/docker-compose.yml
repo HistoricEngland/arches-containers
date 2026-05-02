@@ -1,8 +1,8 @@
 
 services:
-    {{project_urlsafe}}:
-      container_name: {{project_urlsafe}}
-      image: he/{{project}}:dev_build
+    {{project_urlsafe}}-{{project_hash}}:
+      container_name: {{project_urlsafe}}-{{project_hash}}
+      image: he/{{project}}-{{project_hash}}:dev_build
       build:
         args:
           - "PROJ_NAME={{project}}"
@@ -25,11 +25,11 @@ services:
       stdin_open: true
       tty: true
     
-    {{project_urlsafe}}-livereload:
+    {{project_urlsafe}}-{{project_hash}}-livereload:
       profiles:
         - livereload
-      container_name: {{project_urlsafe}}-livereload
-      image: he/{{project}}:dev_build
+      container_name: {{project_urlsafe}}-{{project_hash}}-livereload
+      image: he/{{project}}-{{project_hash}}:dev_build
       command: run_livereload
       volumes:
         - ../../arches:/web_root/arches
@@ -39,13 +39,13 @@ services:
       ports:
         - 35729:35729      
       depends_on:
-          - {{project_urlsafe}}
+          - {{project_urlsafe}}-{{project_hash}}
       stdin_open: true
       tty: true
     
-    {{project_urlsafe}}-webpack:
-      container_name: {{project_urlsafe}}-webpack
-      image: he/{{project}}:dev_build
+    {{project_urlsafe}}-{{project_hash}}-webpack:
+      container_name: {{project_urlsafe}}-{{project_hash}}-webpack
+      image: he/{{project}}-{{project_hash}}:dev_build
       command: run_webpack
       volumes:
         - ../../arches:/web_root/arches
@@ -55,15 +55,15 @@ services:
       ports:
         - 8028:8021
       depends_on:
-          - {{project_urlsafe}}
+          - {{project_urlsafe}}-{{project_hash}}
       stdin_open: true
       tty: true
 
 networks:
   default:
     external: true
-    name: {{project_urlsafe}}-network
+    name: {{project_urlsafe}}-{{project_hash}}-network
 
 volumes:
-    arches-log:
-    arches-static:
+    arches-log-{{project_hash}}:
+    arches-static-{{project_hash}}:

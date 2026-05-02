@@ -9,7 +9,9 @@ from arches_containers.utils.workspace import (
     AcSettings, 
     AcProject, 
     AcProjectAttributes,
-    AC_DIRECTORY_NAME
+    AC_DIRECTORY_NAME,
+    REPLACE_TOKEN_HASH,
+    _generate_project_hash,
 )
 
 
@@ -156,6 +158,74 @@ class TestAcProject:
         project = workspace.get_project(project_name)
         expected_path = os.path.join(workspace._get_ac_directory_path(), project_name)
         assert project.get_project_path() == expected_path
+
+    def test_get_project_hash_returns_hash(self, workspace_with_project):
+        workspace, project_name = workspace_with_project
+        project = workspace.get_project(project_name)
+        project_hash = project.get_project_hash()
+        assert isinstance(project_hash, str)
+        assert len(project_hash) == 5
+
+    def test_get_project_hash_fallback_for_legacy_config(self, temp_workspace):
+        # Simulate a legacy config without project_hash
+        project_name = "legacy_project"
+        temp_workspace.create_project(project_name, make_create_args())
+        project = temp_workspace.get_project(project_name)
+        # Remove the project_hash key to simulate legacy config
+        del project._config[AcProjectAttributes.PROJECT_HASH.value]
+        assert project.get_project_hash() == ""
+
+class TestGenerateProjectHash:
+    def test_hash_is_five_chars(self):
+        h = _generate_project_hash("/some/path/to/project")
+        assert len(h) == 5
+
+    def test_hash_is_hex(self):
+        h = _generate_project_hash("/some/path/to/project")
+        assert all(c in "0123456789abcdef" for c in h)
+
+    def test_hash_is_deterministic(self):
+        path = "/some/path/to/project"
+        assert _generate_project_hash(path) == _generate_project_hash(path)
+
+    def test_different_paths_produce_different_hashes(self):
+        h1 = _generate_project_hash("/path/one")
+        h2 = _generate_project_hash("/path/two")
+        assert h1 != h2
+
+class TestProjectHashInTemplates:
+    @pytest.mark.parametrize("version", ["7.6", "8.0"])
+    def test_project_hash_in_config(self, temp_workspace, version):
+        project = temp_workspace.create_project("hash_test", make_create_args(version=version))
+        project_hash = project.get_project_hash()
+        assert len(project_hash) == 5
+
+    @pytest.mark.parametrize("version", ["7.6", "8.0"])
+    def test_no_hash_token_remains_in_files(self, temp_workspace, version):
+        temp_workspace.create_project("myhashproj", make_create_args(version=version))
+        project_path = os.path.join(temp_workspace._get_ac_directory_path(), "myhashproj")
+        for root, dirs, files in os.walk(project_path):
+            for fname in files:
+                with open(os.path.join(root, fname)) as f:
+                    content = f.read()
+                assert REPLACE_TOKEN_HASH not in content, f"Token {REPLACE_TOKEN_HASH} still present in {fname}"
+
+    @pytest.mark.parametrize("version", ["7.6", "8.0"])
+    def test_hash_present_in_compose_files(self, temp_workspace, version):
+        project = temp_workspace.create_project("hashcomp", make_create_args(version=version))
+        project_hash = project.get_project_hash()
+        project_path = os.path.join(temp_workspace._get_ac_directory_path(), "hashcomp")
+        deps_path = os.path.join(project_path, "docker-compose-dependencies.yml")
+        with open(deps_path) as f:
+            content = f.read()
+        assert project_hash in content
+
+    @pytest.mark.parametrize("version", ["7.5", "7.4"])
+    def test_older_templates_unaffected(self, temp_workspace, version):
+        # Older templates do not have project_hash in config
+        project = temp_workspace.create_project("oldproj", make_create_args(version=version))
+        # get_project_hash() should return "" for legacy (no key in config)
+        assert project.get_project_hash() == ""
 
 class TestAcProjectAttributes:
     def test_project_settings_enum(self):

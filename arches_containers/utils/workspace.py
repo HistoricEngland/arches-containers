@@ -45,6 +45,12 @@ TEMPLATE_PATH = os.path.join(_get_ac_module_path(), "template")
 REPLACE_TOKEN = "{{project}}"
 REPLACE_TOKEN_URLSAFE = "{{project_urlsafe}}"
 REPLACE_TOKEN_REPO = "{{project_repo_directory}}"
+REPLACE_TOKEN_HASH = "{{project_hash}}"
+
+
+def _generate_project_hash(project_path: str) -> str:
+    import hashlib
+    return hashlib.sha1(project_path.encode()).hexdigest()[:5]
 
 
 DEFAULT_AC_SETTINGS = {
@@ -61,6 +67,7 @@ class AcProjectAttributes(Enum):
     PROJECT_NAME = "project_name"
     PROJECT_NAME_URLSAFE = "project_name_url_safe"
     PROJECT_REPO_DIRECTORY = "project_repo_directory"
+    PROJECT_HASH = "project_hash"
     PROJECT_ARCHES_VERSION = "arches_version"
     PROJECT_ARCHES_REPO_ORGANIZATION = "arches_repo_organization"
     PROJECT_ARCHES_REPO_BRANCH = "arches_repo_branch"
@@ -94,6 +101,9 @@ class AcProject:
 
     def get_project_path(self):
         return self._path
+
+    def get_project_hash(self) -> str:
+        return self._config.get(AcProjectAttributes.PROJECT_HASH.value, "")
 
 class AcSettings:
     '''
@@ -253,7 +263,8 @@ class AcWorkspace:
             exit(1)
 
         shutil.copytree(template_folder, target_path)
-        self._replace_projectname_placeholder(project_name, target_path, repo_name)
+        project_hash = _generate_project_hash(target_path)
+        self._replace_projectname_placeholder(project_name, target_path, repo_name, project_hash)
 
         # Adjust platform lines for arm64
         if platform.machine() == "arm64" or platform.machine() == "aarch64":
@@ -263,9 +274,9 @@ class AcWorkspace:
         
         if ac_settings.settings["active_project"] == "":
             ac_settings.set_active_project(project_name)
-        return target_path
+        return target_path, project_hash
         
-    def _replace_projectname_placeholder(self,project_name, target_path, repo_name=None):
+    def _replace_projectname_placeholder(self, project_name, target_path, repo_name=None, project_hash=""):
         for dname, dirs, files in os.walk(target_path):
             for fname in files:
                 fpath = os.path.join(dname, fname)
@@ -274,6 +285,7 @@ class AcWorkspace:
                 s = s.replace(REPLACE_TOKEN, project_name)
                 s = s.replace(REPLACE_TOKEN_URLSAFE, self._get_urlsafe_project_name(project_name))
                 s = s.replace(REPLACE_TOKEN_REPO, repo_name if repo_name else self._get_urlsafe_project_name(project_name))
+                s = s.replace(REPLACE_TOKEN_HASH, project_hash)
                 with open(fpath, "w") as f:
                     f.write(s)
 
@@ -332,6 +344,7 @@ class AcWorkspace:
         project[AcProjectAttributes.PROJECT_NAME.value] = project_name
         project[AcProjectAttributes.PROJECT_NAME_URLSAFE.value] = urlsafe_name
         project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value] = repo_name
+        project[AcProjectAttributes.PROJECT_HASH.value] = project.get_project_hash()
 
         # arg overrides
         if args.organization:
@@ -339,8 +352,7 @@ class AcWorkspace:
         if args.branch:
             project[AcProjectAttributes.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
         
-        if args.organization or args.branch:
-            project.save()
+        project.save()
         
         AcOutputManager.success(f"Project '{project_name}' created successfully.")
         return project
