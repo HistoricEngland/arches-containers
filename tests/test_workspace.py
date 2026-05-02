@@ -228,6 +228,9 @@ class TestProjectHashInTemplates:
         project_hash = project.get_project_hash()
         assert isinstance(project_hash, str)
         assert len(project_hash) == 5
+        # Verify the hash is persisted in config.json
+        reloaded = temp_workspace.get_project("oldproj")
+        assert reloaded.get_project_hash() == project_hash
         # Verify compose files do NOT contain the hash (old templates don't use it)
         project_path = os.path.join(temp_workspace._get_ac_directory_path(), "oldproj")
         deps_path = os.path.join(project_path, "docker-compose-dependencies.yml")

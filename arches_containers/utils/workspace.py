@@ -2,6 +2,7 @@ import platform
 import re
 import os, json, sys
 import shutil
+import hashlib
 
 from slugify import slugify
 import arches_containers
@@ -49,7 +50,8 @@ REPLACE_TOKEN_HASH = "{{project_hash}}"
 
 
 def _generate_project_hash(project_path: str) -> str:
-    import hashlib
+    # SHA1 is used here solely for generating a short deterministic identifier,
+    # not for any security or cryptographic purpose.
     return hashlib.sha1(project_path.encode()).hexdigest()[:5]
 
 
