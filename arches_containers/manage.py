@@ -19,11 +19,13 @@ def test_project_service_available_with_status_200(project_name) -> bool:
     host = ac_settings["host"]
     port = ac_settings["port"]
     url = f"http://{host}:{port}/"
-    result = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}\n", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if result.returncode != 0 and result.stdout != "200":
-        return False
-    else:
-        return True
+    result = subprocess.run(
+        ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url],
+        stdout=subprocess.PIPE,
+        text=True,
+        stderr=subprocess.DEVNULL,
+    )
+    return result.returncode == 0 and result.stdout.strip() == "200"
 
 def compose_project(project_name, action="up", build=False, verbose=False, container_type="both"):
     '''
@@ -106,7 +108,9 @@ def initialize_project(project_name, verbose=False):
         AcOutputManager.fail(f"{DOCKER_COMPOSE_INIT_FILE} not found in {project_path}.")
 
     os.chdir(project_path)
-    command = ["docker", "compose", "-f", compose_file_path, "up", "--exit-code-from", config["project_name_url_safe"]]
+    project_hash = config.get_project_hash()
+    service_name = f"{config['project_name_url_safe']}-{project_hash}" if project_hash else config["project_name_url_safe"]
+    command = ["docker", "compose", "-f", compose_file_path, "up", "--exit-code-from", service_name]
     if verbose:
         result = subprocess.run(command)
         if result.returncode == 0:

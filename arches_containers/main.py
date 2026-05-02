@@ -76,11 +76,26 @@ def main():
     parser_export = subparsers.add_parser("export", help="Export a project to a given repository folder", formatter_class=parser.formatter_class)
     parser_export.add_argument("-p", "--project_name", help="The name of the project to export. Default is the active project.")
     parser_export.add_argument("-r", "--repo_path", help="The path to the repository folder if different to the default.")
+    parser_export.add_argument("--keep-repo-hash", action="store_true", default=None, help="Keep the existing hash in the destination .ac_<project> folder if one exists.")
+    export_prompt_group = parser_export.add_mutually_exclusive_group()
+    export_prompt_group.add_argument("--yes", action="store_true", help="Answer yes to export prompts for non-interactive use.")
+    export_prompt_group.add_argument("--no", action="store_true", help="Answer no to export prompts for non-interactive use.")
 
     # Sub-parser for the import command
     parser_import = subparsers.add_parser("import", help="Import a project from a given repository folder", formatter_class=parser.formatter_class)
     parser_import.add_argument("-p", "--project_name", required=True, help="The name of the project to import.")
     parser_import.add_argument("-r", "--repo_path", help="The path to the repository folder if different to the default.")
+    import_hash_group = parser_import.add_mutually_exclusive_group()
+    import_hash_group.add_argument("--new-hash", action="store_true", default=None, help="Generate a new hash after import.")
+    import_hash_group.add_argument("--hash", dest="hash_value", help="Set an explicit 5-character lowercase hex hash after import.")
+    import_prompt_group = parser_import.add_mutually_exclusive_group()
+    import_prompt_group.add_argument("--yes", action="store_true", help="Answer yes to import prompts for non-interactive use.")
+    import_prompt_group.add_argument("--no", action="store_true", help="Answer no to import prompts for non-interactive use.")
+
+    # Sub-parser for the rehash command
+    parser_rehash = subparsers.add_parser("rehash", help="Regenerate or set the hash used in Docker resource names", formatter_class=parser.formatter_class)
+    parser_rehash.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
+    parser_rehash.add_argument("--hash", dest="hash_value", help="Set an explicit 5-character lowercase hex hash instead of generating one.")
 
     # Sub-parser for the status command
     parser_status = subparsers.add_parser("status", help="Check container status", formatter_class=parser.formatter_class)
@@ -181,7 +196,13 @@ def main():
             except Exception as e:
                 AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
         repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
-        ac_workspace.export_project(args.project_name, repo_path)
+        prompt_default = True if args.yes else False if args.no else None
+        ac_workspace.export_project(
+            args.project_name,
+            repo_path,
+            keep_repo_hash=args.keep_repo_hash,
+            prompt_default=prompt_default,
+        )
     
     # ========================================================================================================
     elif args.command == "import":
@@ -190,7 +211,26 @@ def main():
             AcOutputManager.fail("Project name is required for import.")
 
         repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
-        ac_workspace.import_project(args.project_name, repo_path)
+        prompt_default = True if args.yes else False if args.no else None
+        ac_workspace.import_project(
+            args.project_name,
+            repo_path,
+            new_hash=args.new_hash,
+            target_hash=args.hash_value,
+            prompt_default=prompt_default,
+        )
+
+    # ========================================================================================================
+    elif args.command == "rehash":
+        if args.project_name == "":
+            try:
+                args.project_name = ac_settings.get_active_project().project_name
+            except Exception as e:
+                AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
+
+        with AcOutputManager(f"Running rehash command for project: {args.project_name}") as spinner:
+            AcOutputManager.write(f"▶️  Rehash command for project: {args.project_name}")
+            ac_workspace.rehash_project(args.project_name, target_hash=args.hash_value)
     
     # ========================================================================================================
     elif args.command == "status":

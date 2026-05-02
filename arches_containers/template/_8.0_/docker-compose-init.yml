@@ -1,8 +1,8 @@
 
 services:
-    {{project_urlsafe}}:
-      container_name: {{project_urlsafe}}
-      image: he/{{project}}:dev_build
+    {{project_urlsafe}}-{{project_hash}}:
+      container_name: {{project_urlsafe}}-{{project_hash}}
+      image: he/{{project}}-{{project_hash}}:dev_build
       build:
         args:
           - "PROJ_NAME={{project}}"
