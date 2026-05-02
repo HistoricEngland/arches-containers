@@ -13,6 +13,7 @@ from arches_containers.utils.workspace import (
     REPLACE_TOKEN_HASH,
     _generate_project_hash,
     _version_supports_project_hash,
+    _is_version_supported,
 )
 
 
@@ -381,3 +382,17 @@ class TestAcProjectAttributes:
         assert str(AcProjectAttributes.PROJECT_NAME) == "project_name"
         assert str(AcProjectAttributes.PROJECT_NAME_URLSAFE) == "project_name_url_safe"
         assert str(AcProjectAttributes.PROJECT_ARCHES_VERSION) == "arches_version"
+
+
+class TestIsVersionSupported:
+    @pytest.mark.parametrize("version", ["7.6", "7.7", "8.0", "9.0"])
+    def test_supported_versions(self, version):
+        assert _is_version_supported(version) is True
+
+    @pytest.mark.parametrize("version", ["6.1", "6.2", "7.0", "7.1", "7.2", "7.3", "7.4", "7.5"])
+    def test_unsupported_versions(self, version):
+        assert _is_version_supported(version) is False
+
+    def test_invalid_version_returns_false(self):
+        assert _is_version_supported("invalid") is False
+        assert _is_version_supported("") is False

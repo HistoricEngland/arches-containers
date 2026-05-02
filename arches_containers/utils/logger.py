@@ -183,6 +183,13 @@ class AcOutputManager(object):
         AcOutputManager().spinner.text_attr = message
 
     @staticmethod
+    def warn(message):
+        '''
+        Write a warning message to the spinner (⚠️).
+        '''
+        AcOutputManager().spinner.write(f"⚠️  {message}", style="yellow")
+
+    @staticmethod
     def complete_step(message):
         '''
         Write a completed message to the spinner (🟢).
