@@ -110,12 +110,133 @@ class TestAcWorkspace:
         # Simulate arm64
         monkeypatch.setattr(platform, "machine", lambda: "arm64")
         # Import project back
-        workspace.import_project(project_name, str(repo_path))
+        workspace.import_project(project_name, str(repo_path), new_hash=False)
         assert project_name in workspace.list_projects()
         compose_path = os.path.join(workspace._get_ac_directory_path(), project_name, "docker-compose-dependencies.yml")
         line = get_platform_line(compose_path)
         if line is not None:
             assert line.strip().startswith("platform: linux/arm64")
+
+    def test_import_project_with_explicit_hash(self, workspace_with_project, tmp_path):
+        workspace, project_name = workspace_with_project
+        repo_path = tmp_path / "test_repo_explicit_hash"
+        repo_path.mkdir()
+
+        workspace.export_project(project_name, str(repo_path))
+        workspace.delete_project(project_name)
+
+        workspace.import_project(project_name, str(repo_path), target_hash="abcde")
+        imported_project = workspace.get_project(project_name)
+        assert imported_project.get_project_hash() == "abcde"
+
+        compose_path = os.path.join(workspace._get_ac_directory_path(), project_name, "docker-compose-dependencies.yml")
+        with open(compose_path) as f:
+            content = f.read()
+        assert "abcde" in content
+
+    def test_import_project_prompts_for_new_hash_when_flag_omitted(self, workspace_with_project, tmp_path, monkeypatch):
+        workspace, project_name = workspace_with_project
+        repo_path = tmp_path / "test_repo_prompt_hash"
+        repo_path.mkdir()
+
+        original_hash = workspace.get_project(project_name).get_project_hash()
+        workspace.export_project(project_name, str(repo_path))
+        workspace.delete_project(project_name)
+
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        workspace.import_project(project_name, str(repo_path))
+
+        imported_hash = workspace.get_project(project_name).get_project_hash()
+        assert imported_hash != original_hash
+
+    def test_export_project_keeps_existing_repo_hash(self, workspace_with_project, tmp_path, monkeypatch):
+        workspace, project_name = workspace_with_project
+        repo_path = tmp_path / "test_repo_keep_hash"
+        repo_path.mkdir()
+
+        workspace.export_project(project_name, str(repo_path))
+
+        ac_repo_path = os.path.join(repo_path, f".ac_{project_name}")
+        config_path = os.path.join(ac_repo_path, "config.json")
+        with open(config_path, "r") as config_file:
+            config = json.load(config_file)
+
+        config[AcProjectAttributes.PROJECT_HASH.value] = "abcde"
+        with open(config_path, "w") as config_file:
+            json.dump(config, config_file, indent=4)
+
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+        workspace.export_project(project_name, str(repo_path), keep_repo_hash=True)
+
+        with open(config_path, "r") as config_file:
+            exported_config = json.load(config_file)
+        assert exported_config[AcProjectAttributes.PROJECT_HASH.value] == "abcde"
+
+        compose_path = os.path.join(ac_repo_path, "docker-compose-dependencies.yml")
+        with open(compose_path) as f:
+            content = f.read()
+        assert "abcde" in content
+
+    def test_rehash_project_with_explicit_hash(self, workspace_with_project):
+        workspace, project_name = workspace_with_project
+        workspace.rehash_project(project_name, target_hash="abcde")
+
+        reloaded = workspace.get_project(project_name)
+        assert reloaded.get_project_hash() == "abcde"
+
+    def test_rehash_project_fails_when_containers_running(self, workspace_with_project, monkeypatch):
+        workspace, project_name = workspace_with_project
+
+        monkeypatch.setattr(
+            "arches_containers.utils.workspace.has_running_project_containers",
+            lambda project_name, project_name_urlsafe: True,
+        )
+
+        with pytest.raises(SystemExit):
+            workspace.rehash_project(project_name)
+
+    def test_import_project_rejects_invalid_hash(self, workspace_with_project, tmp_path):
+        workspace, project_name = workspace_with_project
+        repo_path = tmp_path / "test_repo_invalid_hash"
+        repo_path.mkdir()
+
+        workspace.export_project(project_name, str(repo_path))
+        workspace.delete_project(project_name)
+
+        with pytest.raises(ValueError):
+            workspace.import_project(project_name, str(repo_path), target_hash="invalid")
+
+    def test_import_project_prompt_default_yes_is_non_interactive(self, workspace_with_project, tmp_path, monkeypatch):
+        workspace, project_name = workspace_with_project
+        repo_path = tmp_path / "test_repo_prompt_default_yes"
+        repo_path.mkdir()
+
+        original_hash = workspace.get_project(project_name).get_project_hash()
+        workspace.export_project(project_name, str(repo_path))
+        workspace.delete_project(project_name)
+
+        monkeypatch.setattr("builtins.input", lambda _: (_ for _ in ()).throw(AssertionError("input should not be called")))
+        workspace.import_project(project_name, str(repo_path), prompt_default=True)
+
+        imported_hash = workspace.get_project(project_name).get_project_hash()
+        assert imported_hash != original_hash
+
+    def test_export_project_prompt_default_no_is_non_interactive(self, workspace_with_project, tmp_path, monkeypatch):
+        workspace, project_name = workspace_with_project
+        repo_path = tmp_path / "test_repo_prompt_default_no"
+        repo_path.mkdir()
+
+        workspace.export_project(project_name, str(repo_path))
+
+        monkeypatch.setattr("builtins.input", lambda _: (_ for _ in ()).throw(AssertionError("input should not be called")))
+        workspace.export_project(project_name, str(repo_path), prompt_default=False)
+
+        backup_candidates = [
+            name for name in os.listdir(repo_path)
+            if name.startswith(f".ac_{project_name}_")
+        ]
+        # Export should be cancelled without prompting, so no timestamp backup should be created.
+        assert backup_candidates == []
 
 class TestAcSettings:
     def test_settings_creation(self, temp_workspace):

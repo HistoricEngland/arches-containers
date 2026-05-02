@@ -224,22 +224,33 @@ The docker compose files in the exported arches-container project will need to b
 
 ```sh
 cd /path/to/workspace
-act export [-p <project_name>] [-r <repo_path>]
+act export [-p <project_name>] [-r <repo_path>] [--keep-repo-hash] [--yes|--no]
 ```
 
 - `-p`, `--project_name`: The name of the project to export. Default is the active project.
 - `-r`, `--repo_path`: The path to the repository folder if different to the default.
+- `--keep-repo-hash`: Keep the hash from an existing `.ac_<project_name>` config in the target repository.
+- `--yes`: Answer yes to all export prompts (non-interactive mode).
+- `--no`: Answer no to all export prompts (non-interactive mode).
+
+If `--keep-repo-hash` is not passed and the target `.ac_<project_name>` already has a hash in `config.json`, the CLI prompts whether to keep that hash so teammates can import updates without creating new Docker objects.
 
 ### Import a Project
 
 The user can import an arches-container project from a repository folder. This is useful when the user wants to use a project that has been shared with them or stored in a version control system.
 
 ```sh
-act import -p <project_name> [-r <repo_path>]
+act import -p <project_name> [-r <repo_path>] [--new-hash | --hash <abc12>] [--yes|--no]
 ```
 
 - `-p`, `--project_name`: The name of the project to import. It will look for a folder at the path  in the repository folder.
 - `-r`, `--repo_path`: The path to the repository folder if different to the default.
+- `--new-hash`: Generate a new hash for the imported project.
+- `--hash`: Set an explicit 5-character lowercase hexadecimal hash for the imported project.
+- `--yes`: Answer yes to all import prompts (non-interactive mode).
+- `--no`: Answer no to all import prompts (non-interactive mode).
+
+If neither `--new-hash` nor `--hash` is passed, the CLI prompts whether to generate a new hash. This helps avoid accidental collisions with another running environment using the same Docker resource names.
 
 **example:**
 
@@ -268,6 +279,19 @@ To import `project2`:
 cd /path/to/workspace
 act import -p project2 -r ./a_different_repo
 ```
+
+### Rehash a Project
+
+Rehash updates the active project hash (or a named project hash) and rewrites hash references in project files.
+
+```sh
+act rehash [-p <project_name>] [--hash <abc12>]
+```
+
+- `-p`, `--project_name`: The project to rehash. Defaults to the active project.
+- `--hash`: Set an explicit 5-character lowercase hexadecimal hash. If omitted, a new hash is generated.
+
+`rehash` checks for running containers and aborts if any are running to avoid orphaning Docker resources.
 
 ### Check Container Status
 

@@ -3,13 +3,14 @@ import re
 import os, json, sys
 import shutil
 import hashlib
+import secrets
 
 from slugify import slugify
 import arches_containers
 from enum import Enum
 import datetime
 from arches_containers.utils.logger import AcOutputManager
-from arches_containers.utils.status import get_running_containers
+from arches_containers.utils.status import has_running_project_containers
 
 AC_DIRECTORY_NAME = ".arches_containers"
 
@@ -64,6 +65,20 @@ def _generate_project_hash(project_path: str) -> str:
     # SHA1 is used here solely for generating a short deterministic identifier,
     # not for any security or cryptographic purpose.
     return hashlib.sha1(project_path.encode()).hexdigest()[:5]
+
+
+def _generate_new_project_hash(current_hash: str = "") -> str:
+    while True:
+        generated_hash = secrets.token_hex(3)[:5]
+        if generated_hash != current_hash:
+            return generated_hash
+
+
+def _normalize_and_validate_project_hash(project_hash: str) -> str:
+    normalized_hash = (project_hash or "").strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{5}", normalized_hash):
+        raise ValueError("Hash must be a 5-character lowercase hexadecimal value (for example: a1b2c).")
+    return normalized_hash
 
 
 DEFAULT_AC_SETTINGS = {
@@ -333,6 +348,63 @@ class AcWorkspace:
     def _get_project_repo_path(self, project_name):
         return os.path.join(self._path(), self._get_project_repo_name(project_name))
 
+    def _read_project_hash_from_config(self, project_path):
+        config_path = os.path.join(project_path, "config.json")
+        if not os.path.exists(config_path):
+            return ""
+
+        try:
+            with open(config_path, "r", encoding="utf-8") as config_file:
+                config = json.load(config_file)
+        except (OSError, json.JSONDecodeError):
+            return ""
+
+        return config.get(AcProjectAttributes.PROJECT_HASH.value, "")
+
+    def _replace_text_in_project_files(self, project_path, old_value, new_value):
+        if not old_value or old_value == new_value:
+            return
+
+        for root, dirs, files in os.walk(project_path):
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                except (UnicodeDecodeError, OSError):
+                    continue
+
+                if old_value in content:
+                    updated_content = content.replace(old_value, new_value)
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(updated_content)
+
+    def _confirm(self, prompt_message, prompt_default=None):
+        if prompt_default is None:
+            AcOutputManager.stop_spinner()
+            response = input(prompt_message)
+            AcOutputManager.start_spinner()
+            return response.strip().lower() == "y"
+        return prompt_default
+
+    def _set_project_hash(self, project_name, new_hash):
+        project = self.get_project(project_name)
+        if not project.supports_project_hash():
+            AcOutputManager.fail(f"Project '{project_name}' does not support hash-based naming.")
+            exit(1)
+
+        normalized_hash = _normalize_and_validate_project_hash(new_hash)
+        old_hash = project.get_project_hash()
+        project_path = project.get_project_path()
+
+        self._replace_text_in_project_files(project_path, old_hash, normalized_hash)
+
+        # Ensure config is always updated even when old hash is absent from files.
+        project[AcProjectAttributes.PROJECT_HASH.value] = normalized_hash
+        project.save()
+
+        return old_hash, normalized_hash
+
 
     # PUBLIC METHODS
     def get_project(self, project_name) -> AcProject:
@@ -407,7 +479,7 @@ class AcWorkspace:
         '''
         return AcSettings(self)
 
-    def export_project(self, project_name, repo_path):
+    def export_project(self, project_name, repo_path, keep_repo_hash=None, prompt_default=None):
         '''
         Exports a project from the .arches-containers folder to the root of a given repo folder.
         '''
@@ -420,11 +492,21 @@ class AcWorkspace:
         project_path = project.get_project_path()
         ac_repo_path = os.path.join(repo_path, EXPORT_AC_FOLDER)
         
+        existing_repo_hash = ""
+        use_repo_hash = False
+
         if os.path.exists(ac_repo_path):
-            AcOutputManager.stop_spinner()
-            confirm = input(f"The directory {ac_repo_path} already exists. Proceed? (y/n): ")
-            AcOutputManager.start_spinner()
-            if confirm.lower() != 'y':
+            existing_repo_hash = self._read_project_hash_from_config(ac_repo_path)
+            if project.supports_project_hash() and existing_repo_hash:
+                if keep_repo_hash is None:
+                    use_repo_hash = self._confirm(
+                        "The export target already has a hash. Keep the repo hash so teammates can import without creating new Docker objects? (y/n): ",
+                        prompt_default,
+                    )
+                else:
+                    use_repo_hash = keep_repo_hash
+
+            if not self._confirm(f"The directory {ac_repo_path} already exists. Proceed? (y/n): ", prompt_default):
                 AcOutputManager.write("> Export cancelled.")
                 return
             
@@ -443,6 +525,11 @@ class AcWorkspace:
                 shutil.copytree(s, d, dirs_exist_ok=True)
             else:
                 shutil.copy2(s, d)
+
+        if use_repo_hash:
+            source_hash = project.get_project_hash()
+            if source_hash and existing_repo_hash and source_hash != existing_repo_hash:
+                self._replace_text_in_project_files(ac_repo_path, source_hash, existing_repo_hash)
         
         # Modify Docker YAML files
         for root, dirs, files in os.walk(ac_repo_path):
@@ -460,7 +547,7 @@ class AcWorkspace:
         _adjust_platform_lines(ac_repo_path, uncomment=False)
         AcOutputManager.success(f"Project {project_name} exported to {ac_repo_path}.")
 
-    def import_project(self, project_name, repo_path):
+    def import_project(self, project_name, repo_path, new_hash=None, target_hash=None, prompt_default=None):
         '''
         Imports a project from the root of a given repo folder to the .arches-containers folder.
         '''
@@ -473,10 +560,7 @@ class AcWorkspace:
         project_path = os.path.join(self._get_ac_directory_path(), project_name)
         
         if os.path.exists(project_path):
-            AcOutputManager.stop_spinner()
-            confirm = input(f"The project {project_name} already exists. Proceed? (y/n): ")
-            AcOutputManager.start_spinner()
-            if confirm.lower() != 'y':
+            if not self._confirm(f"The project {project_name} already exists. Proceed? (y/n): ", prompt_default):
                 AcOutputManager.success("Import cancelled.")
                 return
             
@@ -501,6 +585,48 @@ class AcWorkspace:
         # Adjust platform lines for arm64
         if platform.machine() == "arm64" or platform.machine() == "aarch64":
             _adjust_platform_lines(project_path, uncomment=True)
+
+        imported_project = self.get_project(project_name)
+        if imported_project.supports_project_hash():
+            current_hash = imported_project.get_project_hash()
+            selected_hash = ""
+            if target_hash:
+                selected_hash = _normalize_and_validate_project_hash(target_hash)
+            elif new_hash is True:
+                selected_hash = _generate_new_project_hash(current_hash)
+            elif new_hash is None:
+                if self._confirm(
+                    "Generate a new hash for this import? Keeping the existing hash can overwrite another working environment using the same Docker resource names. (y/n): ",
+                    prompt_default,
+                ):
+                    selected_hash = _generate_new_project_hash(current_hash)
+
+            if selected_hash:
+                old_hash, applied_hash = self._set_project_hash(project_name, selected_hash)
+                if old_hash != applied_hash:
+                    AcOutputManager.write(f"> Updated project hash from '{old_hash}' to '{applied_hash}'.")
+
         AcOutputManager.success(f"Project {project_name} imported from {ac_repo_path}.")
+
+    def rehash_project(self, project_name, target_hash=None):
+        project = self.get_project(project_name)
+        if not project.supports_project_hash():
+            AcOutputManager.fail(f"Project '{project_name}' does not support hash-based naming.")
+            exit(1)
+
+        if has_running_project_containers(project.project_name, project[AcProjectAttributes.PROJECT_NAME_URLSAFE.value]):
+            AcOutputManager.fail(
+                f"Cannot rehash '{project_name}' while containers are running. Run 'act down -p {project_name}' first to avoid orphaned resources."
+            )
+            exit(1)
+
+        next_hash = _normalize_and_validate_project_hash(target_hash) if target_hash else _generate_new_project_hash(project.get_project_hash())
+        old_hash, applied_hash = self._set_project_hash(project_name, next_hash)
+
+        if old_hash == applied_hash:
+            AcOutputManager.complete_step(f"Project '{project_name}' already uses hash '{applied_hash}'.")
+            return
+
+        AcOutputManager.success(f"Project '{project_name}' rehashed from '{old_hash}' to '{applied_hash}'.")
 
     
