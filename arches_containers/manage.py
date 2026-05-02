@@ -19,11 +19,13 @@ def test_project_service_available_with_status_200(project_name) -> bool:
     host = ac_settings["host"]
     port = ac_settings["port"]
     url = f"http://{host}:{port}/"
-    result = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}\n", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if result.returncode != 0 and result.stdout != "200":
-        return False
-    else:
-        return True
+    result = subprocess.run(
+        ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url],
+        stdout=subprocess.PIPE,
+        text=True,
+        stderr=subprocess.DEVNULL,
+    )
+    return result.returncode == 0 and result.stdout.strip() == "200"
 
 def compose_project(project_name, action="up", build=False, verbose=False, container_type="both"):
     '''
