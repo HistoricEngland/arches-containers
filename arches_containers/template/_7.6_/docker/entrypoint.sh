@@ -140,7 +140,12 @@ create_arches_project() {
 # Yarn
 install_npm_components() {
 	cd ${APP_ROOT}
-	npm install
+	if [[ ! -d node_modules ]]; then
+		echo "node_modules not found, running npm ci..."
+		npm ci
+	else
+		npm install
+	fi
 }
 
 #### Misc
@@ -231,7 +236,7 @@ run_webpack() {
 	echo ""
 	cd ${APP_ROOT}
     echo "Running Webpack"
-	exec sh -c "cd ${APP_ROOT} && npm install && wait-for-it ${PUBLIC_SERVER_PROJECT_NAME}:${DJANGO_PORT} -t 1200 && npm run build_development && npm start"
+	exec sh -c "cd ${APP_ROOT} && wait-for-it ${PUBLIC_SERVER_PROJECT_NAME}:${DJANGO_PORT} -t 1200 && npm run build_development && npm start"
 }
 
 ### Starting point ###
