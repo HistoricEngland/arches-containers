@@ -141,8 +141,13 @@ create_arches_project() {
 install_npm_components() {
 	cd ${APP_ROOT}
 	if [[ ! -d node_modules ]]; then
-		echo "node_modules not found, running npm ci..."
-		npm ci
+		if [[ -f package-lock.json ]]; then
+			echo "node_modules not found, running npm ci..."
+			npm ci
+		else
+			echo "node_modules not found and no package-lock.json found, running npm install..."
+			npm install
+		fi
 	else
 		npm install
 	fi

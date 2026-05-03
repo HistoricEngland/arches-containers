@@ -1,0 +1,9 @@
+{
+    "project_name": "{{project}}",
+    "project_name_url_safe": "{{project_urlsafe}}",
+    "project_repo_directory": "{{project_repo_directory}}",
+    "project_hash": "{{project_hash}}",
+    "arches_version": "8.1",
+    "arches_repo_organization": "archesproject",
+    "arches_repo_branch": "stable/8.1.0"
+}
