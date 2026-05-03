@@ -4,7 +4,7 @@ import os
 import webbrowser
 from slugify import slugify
 from arches_containers import AC_VERSION as arches_containers_version
-from arches_containers.manage import compose_project, initialize_project, status
+from arches_containers.manage import compose_project, initialize_project, status, shell_container, logs_container
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject, AcProjectAttributes, _is_version_supported
 from arches_containers.utils.create_launch_config import generate_launch_config
@@ -101,6 +101,18 @@ def main():
 
     # Sub-parser for the status command
     parser_status = subparsers.add_parser("status", help="Check container status", formatter_class=parser.formatter_class)
+
+    # Sub-parser for the shell command
+    parser_shell = subparsers.add_parser("shell", help="Open an interactive shell in a project container", formatter_class=parser.formatter_class)
+    parser_shell.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
+    parser_shell.add_argument("-c", "--container", default=None, help="The name of the container to open a shell in. Defaults to the main application container.")
+    parser_shell.add_argument("--exec", dest="exec_cmd", default=None, help="A command to run in the container instead of opening an interactive shell. Useful for scripting.")
+
+    # Sub-parser for the logs command
+    parser_logs = subparsers.add_parser("logs", help="Show logs for a project container", formatter_class=parser.formatter_class)
+    parser_logs.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
+    parser_logs.add_argument("-c", "--container", default=None, help="The name of the container to show logs for. Defaults to the main application container.")
+    parser_logs.add_argument("-f", "--follow", action="store_true", help="Follow the log output.")
 
     # Sub-parser for the view command
     parser_view = subparsers.add_parser("view", help="View the active project in a web browser", formatter_class=parser.formatter_class)
@@ -250,6 +262,28 @@ def main():
         with AcOutputManager("Checking active project container status") as spinner:
             AcOutputManager.write("▶️  Checking active project container status")
             status()
+
+    # ========================================================================================================
+    elif args.command == "shell":
+        if args.project_name == "":
+            try:
+                args.project_name = ac_settings.get_active_project().project_name
+            except Exception as e:
+                AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
+        result_code = shell_container(args.project_name, container=args.container, exec_cmd=args.exec_cmd)
+        if result_code != 0:
+            exit(result_code)
+
+    # ========================================================================================================
+    elif args.command == "logs":
+        if args.project_name == "":
+            try:
+                args.project_name = ac_settings.get_active_project().project_name
+            except Exception as e:
+                AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
+        result_code = logs_container(args.project_name, container=args.container, follow=args.follow)
+        if result_code != 0:
+            exit(result_code)
 
     # ========================================================================================================
     elif args.command == "view":
