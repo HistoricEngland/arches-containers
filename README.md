@@ -284,6 +284,72 @@ cd /path/to/workspace
 act status
 ```
 
+### Open a Shell in a Container
+
+Opens an interactive bash shell inside a project container. Defaults to the main application container.
+
+```sh
+cd /path/to/workspace
+act shell [-p <project_name>] [-c <container_name>] [--exec "<command>"]
+```
+
+- `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
+- `-c`, `--container`: The name of the container to open a shell in. Defaults to the main application container.
+- `--exec`: A command to run in the container non-interactively instead of opening a shell. Useful for scripting. Value should be between quotes.
+
+**Examples:**
+
+Open an interactive shell in the default container:
+
+```sh
+act shell
+```
+
+Open a shell in a specific container:
+
+```sh
+act shell -c my-project-db
+```
+
+Run a one-off command non-interactively (exit code is propagated):
+
+```sh
+act shell --exec "python manage.py show_graphs"
+```
+
+### View Container Logs
+
+Shows logs for a project container. Defaults to the main application container.
+
+```sh
+cd /path/to/workspace
+act logs [-p <project_name>] [-c <container_name>] [-f]
+```
+
+- `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
+- `-c`, `--container`: The name of the container to show logs for. Defaults to the main application container.
+- `-f`, `--follow`: Follow the log output (like `docker logs -f`). Press Ctrl+C to stop.
+
+**Examples:**
+
+View logs of the default container:
+
+```sh
+act logs
+```
+
+Follow logs in real time:
+
+```sh
+act logs -f
+```
+
+View logs of a specific container:
+
+```sh
+act logs -c my-project-db
+```
+
 ### Quickly open the application in a browser
 
 Steps to open the application in a browser.

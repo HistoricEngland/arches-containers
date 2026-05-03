@@ -1,6 +1,6 @@
 import os, sys
 import subprocess
-from time import sleep
+from time import sleep, time
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
 from arches_containers.utils.logger import AcOutputManager
@@ -180,6 +180,85 @@ def status():
         project_name = active_project.project_name
         project_name_urlsafe = active_project["project_name_url_safe"]
         get_running_containers(project_name, project_name_urlsafe)
+
+
+def _get_default_container_name(project_name):
+    '''
+    Returns the default container name for a project (the main application container).
+    '''
+    project = AcWorkspace().get_project(project_name)
+    project_hash = project.get_project_hash()
+    if project_hash:
+        return f"{project['project_name_url_safe']}-{project_hash}"
+    return project["project_name_url_safe"]
+
+
+def _check_container_running(container_name):
+    '''
+    Returns True if the container is running, False if it exists but is stopped,
+    or None if no container with that name exists.
+    '''
+    result = subprocess.run(
+        ["docker", "inspect", "--format", "{{.State.Running}}", container_name],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() == "true"
+
+
+def shell_container(project_name, container=None, exec_cmd=None):
+    '''
+    Open an interactive shell or run a command in a project container.
+    '''
+    container_name = container if container else _get_default_container_name(project_name)
+    running = _check_container_running(container_name)
+    if running is None:
+        AcOutputManager.fail(f"Container '{container_name}' not found. Is the project running? Try 'act up'.")
+        return 1
+    if not running:
+        AcOutputManager.fail(f"Container '{container_name}' is not running. Start it with 'act up'.")
+        return 1
+    if exec_cmd:
+        command = ["docker", "exec", container_name, "sh", "-c", exec_cmd]
+    else:
+        AcOutputManager.write(f"... Opening shell in container '{container_name}'.")
+        AcOutputManager.write("... ℹ️ Type 'exit' or press Ctrl+D to return to the terminal.")
+        command = ["docker", "exec", "-it", container_name, "/bin/bash"]
+    AcOutputManager.stop_spinner()
+    result = subprocess.run(command)
+    return result.returncode
+
+
+def logs_container(project_name, container=None, follow=False):
+    '''
+    Show logs for a project container.
+    '''
+    container_name = container if container else _get_default_container_name(project_name)
+    running = _check_container_running(container_name)
+    if running is None:
+        AcOutputManager.fail(f"Container '{container_name}' not found. Is the project running? Try 'act up'.")
+        return 1
+    if not running:
+        if follow:
+            AcOutputManager.fail(f"Container '{container_name}' is not running. Start it with 'act up'.")
+            return 1
+        else:
+            AcOutputManager.warn(f"Container '{container_name}' is not running — showing last known logs.")
+    command = ["docker", "logs", container_name]
+    if follow:
+        AcOutputManager.write(f"... Following logs for container '{container_name}'.")
+        AcOutputManager.write("... ℹ️ Press Ctrl+C to stop and return to the terminal.")
+
+        # pause for 3 seconds to give the user a chance to read the message before the logs start streaming
+        sleep(3)
+        command.append("-f")
+    AcOutputManager.stop_spinner()
+    try:
+        result = subprocess.run(command)
+    except KeyboardInterrupt:
+        return 0
+    return result.returncode
 
 def main(project_name=None, action="up", build=False, verbose=False):
     ac_workspace = AcWorkspace()
