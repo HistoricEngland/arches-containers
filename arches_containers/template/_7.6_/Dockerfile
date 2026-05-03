@@ -1,4 +1,4 @@
-FROM python:3.11.8
+FROM python:3.11.8 AS base
 USER root
 
 ## Build Args
@@ -109,3 +109,18 @@ CMD ["run_arches"]
 
 # Expose port 8000
 EXPOSE 8000
+
+# Dev stage: extends base and installs the Arches project package.
+# This stage is used by docker-compose.yml for the dev server.
+# Requires the project directory to exist on disk (i.e. act init must have been run first).
+FROM base AS dev
+
+# Re-declare build args — ARGs do not persist across stages
+ARG PROJ_NAME=project
+ARG PROJ_REPO_NAME={{project_repo_directory}}
+
+# Copy the project source from the build context (workspace root)
+COPY ${PROJ_REPO_NAME}/ ${WEB_ROOT}/${PROJ_NAME}/
+
+# Install the project as an editable package so Django can import it
+RUN pip install -e ${WEB_ROOT}/${PROJ_NAME}

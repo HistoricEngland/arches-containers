@@ -10,6 +10,7 @@ services:
           - "DOCKER_PATH=./.arches_containers/{{project}}/docker"
         context: ../..
         dockerfile: ./.arches_containers/{{project}}/Dockerfile
+        target: dev
       command: run_arches
       volumes:
         - ../../arches:/web_root/arches
