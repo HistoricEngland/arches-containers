@@ -61,7 +61,7 @@ act [OPTIONS] COMMAND [ARGS]...
     This creates the arches-container project configuration and sets it as the active project.
 
     ```sh
-    act create -p my_project -v 8.0 --activate
+    act create -p my_project -v 8.1 --activate
     ```
 
 1. Start the project:
@@ -372,9 +372,9 @@ The project configuration file `config.json` is used to store default values for
   "project_name": "arches_her_project",
   "project_name_url_safe": "archesherproject",
   "project_repo_directory": "arches-her-project",
-    "arches_version": "8.0",
+    "arches_version": "8.1",
     "arches_repo_organization": "archesproject",
-    "arches_repo_branch": "stable/8.0.0"
+    "arches_repo_branch": "stable/8.1.0"
 }
 ```
 
