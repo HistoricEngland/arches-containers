@@ -6,9 +6,16 @@ from slugify import slugify
 from arches_containers import AC_VERSION as arches_containers_version
 from arches_containers.manage import compose_project, initialize_project, status
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
-from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject, AcProjectAttributes
+from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject, AcProjectAttributes, _is_version_supported
 from arches_containers.utils.create_launch_config import generate_launch_config
 from arches_containers.utils.logger import AcOutputManager
+
+
+def _warn_if_project_unsupported(project_name, ac_project):
+    """Emit a one-line warning if the project uses an unsupported Arches version (< 7.6)."""
+    project_version = ac_project._config.get(AcProjectAttributes.PROJECT_ARCHES_VERSION.value, "")
+    if project_version and not _is_version_supported(project_version):
+        AcOutputManager.warn(f"Project '{project_name}' uses Arches version {project_version} which is no longer actively maintained.")
 
 
 def main():
@@ -117,6 +124,8 @@ def main():
             project = ac_workspace.create_project(project_name, args)
             if args.activate:
                 ac_settings.set_active_project(project.project_name)
+            if not _is_version_supported(args.version):
+                AcOutputManager.warn(f"Arches version {args.version} is no longer actively maintained, so this template may not work as expected and need manual adjustments to fix.")
     # ========================================================================================================
     elif args.command in ["up", "down", "init", "activate", "restart"]:
         if args.project_name == "" and args.command != "activate":
@@ -128,13 +137,15 @@ def main():
         with AcOutputManager(f"Running {args.command} command for project: {args.project_name}") as spinner:
             AcOutputManager.write(f"▶️  {args.command.capitalize()} command for project: {args.project_name}")
             
-            if hasattr(args, 'organization') or hasattr(args, 'branch'):
-                ac_project = ac_workspace.get_project(args.project_name)
-                if hasattr(args, 'organization') and args.organization:
-                    ac_project[AcProjectAttributes.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
-                if hasattr(args, 'branch') and args.branch:
-                    ac_project[AcProjectAttributes.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
+            ac_project = ac_workspace.get_project(args.project_name)
+            if hasattr(args, 'organization') and args.organization:
+                ac_project[AcProjectAttributes.PROJECT_ARCHES_REPO_ORGANIZATION.value] = args.organization
+            if hasattr(args, 'branch') and args.branch:
+                ac_project[AcProjectAttributes.PROJECT_ARCHES_REPO_BRANCH.value] = args.branch
+            if (hasattr(args, 'organization') and args.organization) or (hasattr(args, 'branch') and args.branch):
                 ac_project.save()
+
+            _warn_if_project_unsupported(args.project_name, ac_project)
 
             if hasattr(args, 'verbose') and args.verbose:
                 AcOutputManager.pretty_write_args(vars(args))
@@ -195,6 +206,8 @@ def main():
                 
             except Exception as e:
                 AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
+        export_project = ac_workspace.get_project(args.project_name)
+        _warn_if_project_unsupported(args.project_name, export_project)
         repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
         prompt_default = True if args.yes else False if args.no else None
         ac_workspace.export_project(
@@ -230,6 +243,8 @@ def main():
 
         with AcOutputManager(f"Running rehash command for project: {args.project_name}") as spinner:
             AcOutputManager.write(f"▶️  Rehash command for project: {args.project_name}")
+            rehash_project = ac_workspace.get_project(args.project_name)
+            _warn_if_project_unsupported(args.project_name, rehash_project)
             ac_workspace.rehash_project(args.project_name, target_hash=args.hash_value)
     
     # ========================================================================================================

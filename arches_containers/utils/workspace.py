@@ -61,6 +61,11 @@ def _version_supports_project_hash(arches_version: str) -> bool:
     return (major, minor) >= (7, 6)
 
 
+def _is_version_supported(arches_version: str) -> bool:
+    """Return True for Arches versions that are actively maintained (>= 7.6)."""
+    return _version_supports_project_hash(arches_version)
+
+
 def _generate_project_hash(project_path: str) -> str:
     # SHA1 is used here solely for generating a short deterministic identifier,
     # not for any security or cryptographic purpose.
