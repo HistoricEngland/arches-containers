@@ -61,20 +61,12 @@ act [OPTIONS] COMMAND [ARGS]...
     This creates the arches-container project configuration and sets it as the active project.
 
     ```sh
-    act create -p my_project -v 7.5 --activate
-    ```
-
-1. Initialize the project:
-
-    This sets up the Arches repo, builds the development container, and creates the Arches project directory.
-
-    ```sh
-    act init
+    act create -p my_project -v 8.0 --activate
     ```
 
 1. Start the project:
 
-    This starts the containers and the Arches development server.
+    This sets up the Arches repo, runs initialisation if needed, then starts the containers and the Arches development server.
 
     ```sh
     act up
@@ -166,16 +158,6 @@ Restart only dependency containers with rebuild:
 ```sh
 act restart --dep -b
 ```
-
-#### Initialize a Project
-
-```sh
-cd /path/to/workspace
-act init [-p <project_name>] [-vb]
-```
-
-- `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
-- `-vb`, `--verbose`: Print verbose output during the compose processes.
 
 #### Activate a Project
 
@@ -324,9 +306,9 @@ The project configuration file `config.json` is used to store default values for
   "project_name": "arches_her_project",
   "project_name_url_safe": "archesherproject",
   "project_repo_directory": "arches-her-project",
-    "arches_version": "7.5",
+    "arches_version": "8.0",
     "arches_repo_organization": "archesproject",
-    "arches_repo_branch": "dev/7.5.x"
+    "arches_repo_branch": "stable/8.0.0"
 }
 ```
 

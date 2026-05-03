@@ -308,6 +308,19 @@ class TestAcProject:
         reloaded = temp_workspace.get_project(project_name)
         assert reloaded.get_project_hash() == ""
 
+    def test_is_initialised_returns_false_when_repo_dir_missing(self, workspace_with_project):
+        workspace, project_name = workspace_with_project
+        project = workspace.get_project(project_name)
+        # repo_dir does not exist in workspace root, so is_initialised() should return False
+        assert project.is_initialised() is False
+
+    def test_is_initialised_returns_true_when_repo_dir_exists(self, workspace_with_project):
+        workspace, project_name = workspace_with_project
+        project = workspace.get_project(project_name)
+        repo_dir = os.path.join(workspace.path, project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value])
+        os.makedirs(repo_dir, exist_ok=True)
+        assert project.is_initialised() is True
+
 class TestGenerateProjectHash:
     def test_hash_is_five_chars(self):
         h = _generate_project_hash("/some/path/to/project")

@@ -14,7 +14,7 @@ def run_cli(args):
 
 def test_restart_runs_down_and_up():
     with patch("arches_containers.main.compose_project") as mock_compose, \
-         patch("arches_containers.main.arches_repo_helper.change_arches_branch") as mock_branch, \
+         patch("arches_containers.main.arches_repo_helper.clone_and_checkout_repo") as mock_branch, \
          patch("arches_containers.main.AcWorkspace") as mock_workspace, \
          patch("arches_containers.main.AcOutputManager"):
         # Simulate active project
@@ -28,7 +28,7 @@ def test_restart_runs_down_and_up():
 
 def test_restart_with_build_and_verbose():
     with patch("arches_containers.main.compose_project") as mock_compose, \
-         patch("arches_containers.main.arches_repo_helper.change_arches_branch") as mock_branch, \
+         patch("arches_containers.main.arches_repo_helper.clone_and_checkout_repo") as mock_branch, \
          patch("arches_containers.main.AcWorkspace") as mock_workspace, \
          patch("arches_containers.main.AcOutputManager"):
         mock_settings = mock_workspace.return_value.get_settings.return_value
@@ -41,7 +41,7 @@ def test_restart_with_build_and_verbose():
 
 def test_restart_with_app_flag():
     with patch("arches_containers.main.compose_project") as mock_compose, \
-         patch("arches_containers.main.arches_repo_helper.change_arches_branch") as mock_branch, \
+         patch("arches_containers.main.arches_repo_helper.clone_and_checkout_repo") as mock_branch, \
          patch("arches_containers.main.AcWorkspace") as mock_workspace, \
          patch("arches_containers.main.AcOutputManager"):
         mock_settings = mock_workspace.return_value.get_settings.return_value
@@ -54,7 +54,7 @@ def test_restart_with_app_flag():
 
 def test_restart_with_dep_flag():
     with patch("arches_containers.main.compose_project") as mock_compose, \
-         patch("arches_containers.main.arches_repo_helper.change_arches_branch") as mock_branch, \
+         patch("arches_containers.main.arches_repo_helper.clone_and_checkout_repo") as mock_branch, \
          patch("arches_containers.main.AcWorkspace") as mock_workspace, \
          patch("arches_containers.main.AcOutputManager"):
         mock_settings = mock_workspace.return_value.get_settings.return_value
@@ -67,11 +67,12 @@ def test_restart_with_dep_flag():
 
 def test_up_with_app_flag():
     with patch("arches_containers.main.compose_project") as mock_compose, \
-         patch("arches_containers.main.arches_repo_helper.change_arches_branch") as mock_branch, \
+         patch("arches_containers.main.arches_repo_helper.clone_and_checkout_repo") as mock_branch, \
          patch("arches_containers.main.AcWorkspace") as mock_workspace, \
          patch("arches_containers.main.AcOutputManager"):
         mock_settings = mock_workspace.return_value.get_settings.return_value
         mock_settings.get_active_project.return_value.project_name = "demo"
+        mock_workspace.return_value.get_project.return_value.is_initialised.return_value = True
         run_cli(["up", "-p", "demo", "--app"])
         # Should call up with app container type
         assert mock_compose.call_count == 1
@@ -79,7 +80,7 @@ def test_up_with_app_flag():
 
 def test_down_with_dep_flag():
     with patch("arches_containers.main.compose_project") as mock_compose, \
-         patch("arches_containers.main.arches_repo_helper.change_arches_branch") as mock_branch, \
+         patch("arches_containers.main.arches_repo_helper.clone_and_checkout_repo") as mock_branch, \
          patch("arches_containers.main.AcWorkspace") as mock_workspace, \
          patch("arches_containers.main.AcOutputManager"):
         mock_settings = mock_workspace.return_value.get_settings.return_value
@@ -88,6 +89,38 @@ def test_down_with_dep_flag():
         # Should call down with dep container type
         assert mock_compose.call_count == 1
         assert mock_compose.call_args_list[0][0][4] == "dep"  # container_type
+
+def test_up_uninitialised_project_runs_init():
+    """Assert that when is_initialised() returns False, clone_and_checkout_repo and initialize_project are both called."""
+    with patch("arches_containers.main.compose_project") as mock_compose, \
+         patch("arches_containers.main.arches_repo_helper.clone_and_checkout_repo") as mock_clone, \
+         patch("arches_containers.main.initialize_project") as mock_init, \
+         patch("arches_containers.main.AcWorkspace") as mock_workspace, \
+         patch("arches_containers.main.AcOutputManager"):
+        mock_settings = mock_workspace.return_value.get_settings.return_value
+        mock_settings.get_active_project.return_value.project_name = "demo"
+        mock_workspace.return_value.get_project.return_value.is_initialised.return_value = False
+        run_cli(["up", "-p", "demo"])
+        mock_clone.assert_called_once()
+        mock_init.assert_called_once()
+        mock_compose.assert_called_once()
+
+
+def test_up_initialised_project_skips_init():
+    """Assert that when is_initialised() returns True, initialize_project is not called."""
+    with patch("arches_containers.main.compose_project") as mock_compose, \
+         patch("arches_containers.main.arches_repo_helper.clone_and_checkout_repo") as mock_clone, \
+         patch("arches_containers.main.initialize_project") as mock_init, \
+         patch("arches_containers.main.AcWorkspace") as mock_workspace, \
+         patch("arches_containers.main.AcOutputManager"):
+        mock_settings = mock_workspace.return_value.get_settings.return_value
+        mock_settings.get_active_project.return_value.project_name = "demo"
+        mock_workspace.return_value.get_project.return_value.is_initialised.return_value = True
+        run_cli(["up", "-p", "demo"])
+        mock_clone.assert_called_once()
+        mock_init.assert_not_called()
+        mock_compose.assert_called_once()
+
 
 def test_app_and_dep_flags_mutually_exclusive():
     """Test that --app and --dep flags cannot be used together"""

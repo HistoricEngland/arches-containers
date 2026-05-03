@@ -144,6 +144,11 @@ class AcProject:
             return ""
         return self._config.get(AcProjectAttributes.PROJECT_HASH.value, "")
 
+    def is_initialised(self) -> bool:
+        ac_workspace = AcWorkspace()
+        repo_dir = os.path.join(ac_workspace.path, self[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value])
+        return os.path.exists(repo_dir)
+
 class AcSettings:
     '''
     Provides access to the settings for the workspace.
