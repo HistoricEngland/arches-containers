@@ -125,7 +125,7 @@ def main():
             if args.activate:
                 ac_settings.set_active_project(project.project_name)
             if not _is_version_supported(args.version):
-                AcOutputManager.warn(f"Arches version {args.version} is no longer actively maintained. New projects using this template may not work in the future.")
+                AcOutputManager.warn(f"Arches version {args.version} is no longer actively maintained, so this template may not work as expected and need manual adjustments to fix.")
     # ========================================================================================================
     elif args.command in ["up", "down", "init", "activate", "restart"]:
         if args.project_name == "" and args.command != "activate":
