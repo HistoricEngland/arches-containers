@@ -34,7 +34,7 @@ def main():
     
 
     # Sub-parser for starting containers
-    parser_up = subparsers.add_parser("up", help="Start the project containers", formatter_class=parser.formatter_class)
+    parser_up = subparsers.add_parser("up", help="Start the project containers. Initialises automatically if needed.", formatter_class=parser.formatter_class)
     parser_up.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
     parser_up.add_argument("-b", "--build", action="store_true", help="Rebuild containers when composing up")
     parser_up.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
@@ -58,11 +58,6 @@ def main():
     container_group_restart = parser_restart.add_mutually_exclusive_group()
     container_group_restart.add_argument("--app", action="store_true", help="Only operate on application containers (docker-compose.yml)")
     container_group_restart.add_argument("--dep", action="store_true", help="Only operate on dependency containers (docker-compose-dependencies.yml)")
-
-    # Sub-parser for initializing project
-    parser_init = subparsers.add_parser("init", help="Initialize the project", formatter_class=parser.formatter_class)
-    parser_init.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
-    parser_init.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
 
     # Sub-parser for activating project
     parser_activate = subparsers.add_parser("activate", help="Set a project as the active project", formatter_class=parser.formatter_class)
@@ -127,7 +122,7 @@ def main():
             if not _is_version_supported(args.version):
                 AcOutputManager.warn(f"Arches version {args.version} is no longer actively maintained, so this template may not work as expected and need manual adjustments to fix.")
     # ========================================================================================================
-    elif args.command in ["up", "down", "init", "activate", "restart"]:
+    elif args.command in ["up", "down", "activate", "restart"]:
         if args.project_name == "" and args.command != "activate":
             try:
                 args.project_name = ac_settings.get_active_project().project_name
@@ -154,11 +149,15 @@ def main():
                 ac_settings.set_active_project(args.project_name)
                 arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
                 AcOutputManager.complete_step(f"Project '{args.project_name}' set as active.")
-            elif args.command == "init":
+            elif args.command == "up":
                 arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
-                initialize_project(args.project_name, args.verbose)
+                if not ac_project.is_initialised():
+                    initialize_project(args.project_name, args.verbose)
+                # Determine container type
+                container_type = "app" if getattr(args, 'app', False) else "dep" if getattr(args, 'dep', False) else "both"
+                compose_project(args.project_name, "up", getattr(args, 'build', False), args.verbose, container_type)
             elif args.command == "restart":
-                arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
+                arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
                 # Determine container type
                 container_type = "app" if getattr(args, 'app', False) else "dep" if getattr(args, 'dep', False) else "both"
                 # First bring containers down
@@ -166,10 +165,9 @@ def main():
                 # Then bring them up, with build if requested
                 compose_project(args.project_name, "up", getattr(args, 'build', False), args.verbose, container_type)
             else:
-                arches_repo_helper.change_arches_branch(args.project_name, verbose=args.verbose)
-                # Determine container type
+                # down
                 container_type = "app" if getattr(args, 'app', False) else "dep" if getattr(args, 'dep', False) else "both"
-                compose_project(args.project_name, args.command, getattr(args, 'build', False), args.verbose, container_type)
+                compose_project(args.project_name, "down", False, args.verbose, container_type)
 
     # ========================================================================================================
     elif args.command == "list":

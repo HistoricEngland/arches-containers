@@ -144,6 +144,15 @@ class AcProject:
             return ""
         return self._config.get(AcProjectAttributes.PROJECT_HASH.value, "")
 
+    def is_initialised(self) -> bool:
+        ac_workspace = AcWorkspace()
+        repo_dir_name = self._config.get(
+            AcProjectAttributes.PROJECT_REPO_DIRECTORY.value,
+            self.project_name,
+        )
+        repo_dir = os.path.join(ac_workspace.path, repo_dir_name)
+        return os.path.exists(repo_dir)
+
 class AcSettings:
     '''
     Provides access to the settings for the workspace.
@@ -599,7 +608,7 @@ class AcWorkspace:
                 selected_hash = _normalize_and_validate_project_hash(target_hash)
             elif new_hash is True:
                 selected_hash = _generate_new_project_hash(current_hash)
-            elif new_hash is None:
+            elif new_hash is None and current_hash:
                 if self._confirm(
                     "Generate a new hash for this import? Keeping the existing hash can overwrite another working environment using the same Docker resource names. (y/n): ",
                     prompt_default,

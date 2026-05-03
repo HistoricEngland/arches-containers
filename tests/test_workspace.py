@@ -150,6 +150,28 @@ class TestAcWorkspace:
         imported_hash = workspace.get_project(project_name).get_project_hash()
         assert imported_hash != original_hash
 
+    def test_import_project_does_not_prompt_when_config_has_no_hash_key(self, temp_workspace, tmp_path, monkeypatch):
+        """Importing a config without a project_hash key should not prompt for a new hash."""
+        project_name = "test_project"
+        temp_workspace.create_project(project_name, make_create_args())
+        repo_path = tmp_path / "test_repo_no_hash_key"
+        repo_path.mkdir()
+
+        temp_workspace.export_project(project_name, str(repo_path))
+        temp_workspace.delete_project(project_name)
+
+        # Remove the project_hash key from the exported config to simulate a legacy config
+        ac_repo_path = os.path.join(repo_path, f".ac_{project_name}")
+        config_path = os.path.join(ac_repo_path, "config.json")
+        with open(config_path, "r") as f:
+            config = json.load(f)
+        config.pop(AcProjectAttributes.PROJECT_HASH.value, None)
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=4)
+
+        monkeypatch.setattr("builtins.input", lambda _: (_ for _ in ()).throw(AssertionError("input() should not be called for configs without a project_hash key")))
+        temp_workspace.import_project(project_name, str(repo_path))
+
     def test_export_project_keeps_existing_repo_hash(self, workspace_with_project, tmp_path, monkeypatch):
         workspace, project_name = workspace_with_project
         repo_path = tmp_path / "test_repo_keep_hash"
@@ -307,6 +329,19 @@ class TestAcProject:
 
         reloaded = temp_workspace.get_project(project_name)
         assert reloaded.get_project_hash() == ""
+
+    def test_is_initialised_returns_false_when_repo_dir_missing(self, workspace_with_project):
+        workspace, project_name = workspace_with_project
+        project = workspace.get_project(project_name)
+        # repo_dir does not exist in workspace root, so is_initialised() should return False
+        assert project.is_initialised() is False
+
+    def test_is_initialised_returns_true_when_repo_dir_exists(self, workspace_with_project):
+        workspace, project_name = workspace_with_project
+        project = workspace.get_project(project_name)
+        repo_dir = os.path.join(workspace.path, project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value])
+        os.makedirs(repo_dir, exist_ok=True)
+        assert project.is_initialised() is True
 
 class TestGenerateProjectHash:
     def test_hash_is_five_chars(self):

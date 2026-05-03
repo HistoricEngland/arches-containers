@@ -27,6 +27,31 @@ def test_project_service_available_with_status_200(project_name) -> bool:
     )
     return result.returncode == 0 and result.stdout.strip() == "200"
 
+def _image_build_needed(compose_file_path, project_path):
+    '''
+    Return True if any image referenced by the compose file does not exist locally
+    (i.e. it will need to be built or pulled before containers can start).
+    '''
+    try:
+        config_result = subprocess.run(
+            ["docker", "compose", "-f", compose_file_path, "config", "--images"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+            cwd=project_path
+        )
+        for image in config_result.stdout.splitlines():
+            image = image.strip()
+            if image:
+                inspect = subprocess.run(
+                    ["docker", "image", "inspect", image],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+                if inspect.returncode != 0:
+                    return True
+    except Exception:
+        pass
+    return False
+
+
 def compose_project(project_name, action="up", build=False, verbose=False, container_type="both"):
     '''
     Compose the project using docker-compose.yml and docker-compose-dependencies.yml files.
@@ -61,6 +86,11 @@ def compose_project(project_name, action="up", build=False, verbose=False, conta
             subprocess.run(["sleep", "15"])
 
         compose_file_path = os.path.join(project_path, compose_file)
+
+        if compose_file == DOCKER_COMPOSE_FILE and action == "up":
+            if build or _image_build_needed(compose_file_path, project_path):
+                AcOutputManager.write("... ℹ️ the development image needs to be built and may take a few minutes.")
+
         command = ["docker", "compose", "-f", compose_file_path, action]
         if action == "up":
             command.append("-d")
