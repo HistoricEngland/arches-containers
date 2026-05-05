@@ -207,6 +207,19 @@ def _check_container_running(container_name):
     return result.stdout.strip() == "true"
 
 
+def _get_app_root(container_name):
+    '''
+    Returns the APP_ROOT environment variable from a running container, or None if not set.
+    '''
+    result = subprocess.run(
+        ["docker", "exec", container_name, "printenv", "APP_ROOT"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+    if result.returncode == 0:
+        return result.stdout.strip() or None
+    return None
+
+
 def shell_container(project_name, container=None, exec_cmd=None):
     '''
     Open an interactive shell or run a command in a project container.
@@ -219,12 +232,17 @@ def shell_container(project_name, container=None, exec_cmd=None):
     if not running:
         AcOutputManager.fail(f"Container '{container_name}' is not running. Start it with 'act up'.")
         return 1
+    workdir_flags = []
+    if container is None:
+        app_root = _get_app_root(container_name)
+        if app_root:
+            workdir_flags = ["-w", app_root]
     if exec_cmd:
-        command = ["docker", "exec", container_name, "sh", "-c", exec_cmd]
+        command = ["docker", "exec"] + workdir_flags + [container_name, "sh", "-c", exec_cmd]
     else:
         AcOutputManager.write(f"... Opening shell in container '{container_name}'.")
         AcOutputManager.write("... ℹ️ Type 'exit' or press Ctrl+D to return to the terminal.")
-        command = ["docker", "exec", "-it", container_name, "/bin/bash"]
+        command = ["docker", "exec", "-it"] + workdir_flags + [container_name, "/bin/bash"]
     AcOutputManager.stop_spinner()
     result = subprocess.run(command)
     return result.returncode
