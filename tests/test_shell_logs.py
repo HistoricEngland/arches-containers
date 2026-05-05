@@ -20,11 +20,14 @@ def mock_workspace(mock_project):
         yield mock_ws_cls
 
 
-def _make_subprocess_side_effect(inspect_running: bool | None, exec_returncode: int = 0):
+APP_ROOT_VALUE = "/web/my-project"
+
+def _make_subprocess_side_effect(inspect_running: bool | None, exec_returncode: int = 0, app_root: str | None = APP_ROOT_VALUE):
     """
     Returns a side_effect function for subprocess.run that:
     - Responds to 'docker inspect' calls based on inspect_running
       (None → returncode=1 meaning not found, True/False → returncode=0 with stdout 'true'/'false')
+    - Responds to 'printenv APP_ROOT' calls with app_root (None → returncode=1)
     - Returns returncode=exec_returncode for all other docker commands
     """
     def side_effect(command, **kwargs):
@@ -36,6 +39,13 @@ def _make_subprocess_side_effect(inspect_running: bool | None, exec_returncode: 
             else:
                 result.returncode = 0
                 result.stdout = "true\n" if inspect_running else "false\n"
+        elif "printenv" in command and "APP_ROOT" in command:
+            if app_root:
+                result.returncode = 0
+                result.stdout = app_root + "\n"
+            else:
+                result.returncode = 1
+                result.stdout = ""
         else:
             result.returncode = exec_returncode
         return result
@@ -56,7 +66,7 @@ class TestShellContainer:
     def test_default_container_opens_interactive_bash(self, mock_subprocess_running, mock_workspace):
         shell_container("my_project")
         mock_subprocess_running.assert_called_with(
-            ["docker", "exec", "-it", "my-project-a1b2c", "/bin/bash"]
+            ["docker", "exec", "-it", "-w", APP_ROOT_VALUE, "my-project-a1b2c", "/bin/bash"]
         )
 
     def test_explicit_container_name_is_used(self, mock_subprocess_running, mock_workspace):
@@ -68,7 +78,7 @@ class TestShellContainer:
     def test_exec_cmd_produces_non_interactive_call(self, mock_subprocess_running, mock_workspace):
         shell_container("my_project", exec_cmd="python manage.py show_graphs")
         mock_subprocess_running.assert_called_with(
-            ["docker", "exec", "my-project-a1b2c", "sh", "-c", "python manage.py show_graphs"]
+            ["docker", "exec", "-w", APP_ROOT_VALUE, "my-project-a1b2c", "sh", "-c", "python manage.py show_graphs"]
         )
 
     def test_exec_cmd_with_explicit_container(self, mock_subprocess_running, mock_workspace):
@@ -83,11 +93,19 @@ class TestShellContainer:
             result = shell_container("my_project")
         assert result == 1
 
+    def test_default_container_no_app_root_falls_back_to_no_workdir(self, mock_workspace):
+        with patch("arches_containers.manage.subprocess.run") as mock_run:
+            mock_run.side_effect = _make_subprocess_side_effect(inspect_running=True, app_root=None)
+            shell_container("my_project")
+        mock_run.assert_called_with(
+            ["docker", "exec", "-it", "my-project-a1b2c", "/bin/bash"]
+        )
+
     def test_default_container_without_hash(self, mock_subprocess_running, mock_workspace, mock_project):
         mock_project.get_project_hash.return_value = ""
         result = shell_container("my_project")
         mock_subprocess_running.assert_called_with(
-            ["docker", "exec", "-it", "my-project", "/bin/bash"]
+            ["docker", "exec", "-it", "-w", APP_ROOT_VALUE, "my-project", "/bin/bash"]
         )
         assert result == 0
 
