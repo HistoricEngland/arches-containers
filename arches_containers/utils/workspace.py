@@ -358,11 +358,12 @@ class AcWorkspace:
 
             project[AcProjectAttributes.PROJECT_REPO_DIRECTORY.value] = project_repo_directory
             project.save()
+        return project_repo_directory
 
     def _get_project_repo_path(self, project_name):
-        return os.path.join(self._path(), self._get_project_repo_name(project_name))
+        return os.path.join(self._path, self._get_project_repo_name(project_name))
 
-    def _read_project_hash_from_config(self, project_path):
+    def _read_project_hash_from_config(self, project_path) -> str:
         config_path = os.path.join(project_path, "config.json")
         if not os.path.exists(config_path):
             return ""
@@ -487,6 +488,60 @@ class AcWorkspace:
         context = self._get_ac_directory_path()
         return [name for name in os.listdir(context) if os.path.isdir(os.path.join(context, name))]
 
+    def discover_importable_projects(self):
+        '''
+        Recursively scans the workspace path for directories containing a
+        .ac_*/config.json export file. Skips the .arches_containers management
+        directory itself.
+
+        Returns a list of dicts:
+            {"project_name": str, "repo_path": str, "display_name": str}
+        where repo_path is the directory containing the .ac_<project_name> folder
+        and display_name is "project_name" for unique entries, or
+        "project_name  (relative/path)" when the same project_name appears
+        in multiple locations.
+        '''
+        search_root = self._path
+        ac_dir = self._get_ac_directory_path()
+        found = []
+
+        for dirpath, dirnames, _ in os.walk(search_root):
+            # Skip the .arches_containers management directory
+            dirnames[:] = [
+                d for d in dirnames
+                if os.path.join(dirpath, d) != ac_dir
+                and not d.startswith(".ac_")
+            ]
+            for entry in os.scandir(dirpath):
+                if not entry.is_dir() or not entry.name.startswith(".ac_"):
+                    continue
+                config_path = os.path.join(entry.path, "config.json")
+                if not os.path.isfile(config_path):
+                    continue
+                try:
+                    with open(config_path, "r", encoding="utf-8") as f:
+                        config = json.load(f)
+                    project_name = config.get("project_name", "")
+                    if project_name:
+                        rel = os.path.relpath(dirpath, search_root)
+                        found.append({"project_name": project_name, "repo_path": dirpath, "_rel": rel})
+                except (OSError, ValueError):
+                    pass
+
+        # Compute display_name: add relative path for duplicates
+        from collections import Counter
+        name_counts = Counter(d["project_name"] for d in found)
+        for d in found:
+            if name_counts[d["project_name"]] > 1:
+                d["display_name"] = f"{d['project_name']}  (./{d['_rel']})"
+            else:
+                d["display_name"] = d["project_name"]
+            del d["_rel"]
+
+        found.sort(key=lambda d: d["display_name"].lower())
+        return found
+
+
     def get_settings(self):
         '''
         Returns the AcSettings object.
@@ -503,16 +558,25 @@ class AcWorkspace:
         if project is None:
             raise Exception(f"Project {project_name} not found.")
         
+        # check that the target repo path exists and is a directory
+        if not os.path.exists(repo_path) or not os.path.isdir(repo_path):
+            AcOutputManager.fail(f"Export failed. The target repo path '{repo_path}' does not exist or is not a directory.")
+            exit(1)
+
         project_path = project.get_project_path()
         ac_repo_path = os.path.join(repo_path, EXPORT_AC_FOLDER)
+        repo_dir_name = os.path.basename(repo_path)
         
         existing_repo_hash = ""
         use_repo_hash = False
 
         if os.path.exists(ac_repo_path):
             existing_repo_hash = self._read_project_hash_from_config(ac_repo_path)
-            if project.supports_project_hash() and existing_repo_hash:
-                if keep_repo_hash is None:
+            project_hash = project.get_project_hash()
+            if project_hash and existing_repo_hash:
+                if project_hash == existing_repo_hash:
+                    use_repo_hash = True
+                elif keep_repo_hash is None:
                     use_repo_hash = self._confirm(
                         "The export target already has a hash. Keep the repo hash so teammates can import without creating new Docker objects? (y/n): ",
                         prompt_default,
@@ -552,7 +616,7 @@ class AcWorkspace:
                     file_path = os.path.join(root, file)
                     with open(file_path, "r+") as f:
                         content = f.read()
-                        content = content.replace(f"/.arches_containers/{project_name}", f"/{project_name}/{EXPORT_AC_FOLDER}")
+                        content = content.replace(f"/.arches_containers/{project_name}", f"/{repo_dir_name}/{EXPORT_AC_FOLDER}")
                         f.seek(0)
                         f.write(content)
                         f.truncate()
