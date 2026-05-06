@@ -60,6 +60,26 @@ def _interactive_project_select(message, choices):
     return selection[0]
 
 
+def _prompt_for_text(prompt):
+    """Show a simple text-input prompt. Returns the entered string, or None if Esc/Ctrl-C."""
+    from prompt_toolkit import prompt as pt_prompt
+    from prompt_toolkit.keys import Keys
+    from prompt_toolkit.key_binding import KeyBindings
+    cancelled = [False]
+    kb = KeyBindings()
+
+    @kb.add("escape")
+    def _esc(event):
+        cancelled[0] = True
+        event.app.exit(exception=KeyboardInterrupt)
+
+    try:
+        value = pt_prompt(prompt, key_bindings=kb).strip()
+    except (KeyboardInterrupt, EOFError):
+        return None
+    return value if value else None
+
+
 def _warn_if_project_unsupported(project_name, ac_project):
     """Emit a one-line warning if the project uses an unsupported Arches version (< 7.6)."""
     project_version = ac_project._config.get(AcProjectAttributes.PROJECT_ARCHES_VERSION.value, "")
@@ -74,8 +94,8 @@ def main():
     
     # Sub-parser for the create command
     parser_create = subparsers.add_parser("create", help="Create a new container project", formatter_class=parser.formatter_class)
-    parser_create.add_argument("-p", "--project_name", required=True, help="The name of the project. This value will be slugified to lowercase with underscore separators")
-    parser_create.add_argument("-v", "--version", "--ver", required=True, help="The arches version the project will be using (major.minor format)")
+    parser_create.add_argument("-p", "--project_name", required=False, default=None, help="The name of the project. This value will be slugified to lowercase with underscore separators")
+    parser_create.add_argument("-v", "--version", "--ver", required=False, default=None, help="The arches version the project will be using (major.minor format)")
     parser_create.add_argument("-r", "--repo_name", help="The name of the local repository folder to create for the project. v7.6 and higher only.")
     parser_create.add_argument("-o", "--organization", default="archesproject", help="The GitHub organization of the arches repo (default: archesproject)")
     parser_create.add_argument("-br", "--branch", help="The branch of the arches repo to use. Default is the 'dev/<version>.x' branch.")
@@ -173,6 +193,22 @@ def main():
 
     # ========================================================================================================
     if args.command == "create":
+        if args.project_name is None:
+            AcOutputManager.write("▶️  Create Project")
+            AcOutputManager.write("  Enter a project name (e.g. 'My Arches Project'). This will be slugified to lowercase with underscores (e.g. 'my_arches_project').")
+            entered = _prompt_for_text("  Project name: ")
+            if entered is None:
+                AcOutputManager.write("Creation cancelled.")
+                exit(0)
+            args.project_name = entered
+        if args.version is None:
+            version_items = ac_workspace.list_available_versions()
+            AcOutputManager.write("  Select an Arches version for your project:")
+            selected_version = _interactive_project_select("", [v["display_name"] for v in version_items])
+            if selected_version is None:
+                AcOutputManager.write("Creation cancelled.")
+                exit(0)
+            args.version = next(v["version"] for v in version_items if v["display_name"] == selected_version)
         with AcOutputManager("Creating project") as spinner:
             AcOutputManager.write(f"▶️  Creating project: {args.project_name}")
             

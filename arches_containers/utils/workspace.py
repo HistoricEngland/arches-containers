@@ -296,6 +296,7 @@ class AcWorkspace:
                     return os.path.join(dirpath, dirname)
         return None
 
+
     def _get_urlsafe_project_name(self, project_name):
         return slugify(text=project_name, separator="-")
 
@@ -422,6 +423,26 @@ class AcWorkspace:
 
 
     # PUBLIC METHODS
+    
+    def list_available_versions(self):
+        '''
+        Returns a list of dicts sorted newest-first:
+            {"version": str, "display_name": str}
+        where display_name appends " (unsupported)" for versions < 7.6.
+        '''
+        versions = []
+        for entry in os.scandir(TEMPLATE_PATH):
+            if entry.is_dir() and entry.name.startswith("_") and entry.name.endswith("_"):
+                versions.append(entry.name.strip("_"))
+        versions.sort(key=lambda v: [int(x) for x in v.split(".")], reverse=True)
+        return [
+            {
+                "version": v,
+                "display_name": v if _is_version_supported(v) else f"{v} (unsupported)",
+            }
+            for v in versions
+        ]
+    
     def get_project(self, project_name) -> AcProject:
         try:
             return AcProject(project_name, self._get_ac_directory_path())
