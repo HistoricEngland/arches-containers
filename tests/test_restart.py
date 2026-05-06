@@ -20,7 +20,8 @@ def test_restart_runs_down_and_up():
         # Simulate active project
         mock_settings = mock_workspace.return_value.get_settings.return_value
         mock_settings.get_active_project.return_value.project_name = "demo"
-        run_cli(["restart", "-p", "demo"])
+        mock_workspace.return_value.is_active_project_running.return_value = True
+        run_cli(["restart"])
         # Should call down then up
         assert mock_compose.call_count == 2
         assert mock_compose.call_args_list[0][0][1] == "down"
@@ -33,7 +34,8 @@ def test_restart_with_build_and_verbose():
          patch("arches_containers.main.AcOutputManager"):
         mock_settings = mock_workspace.return_value.get_settings.return_value
         mock_settings.get_active_project.return_value.project_name = "demo"
-        run_cli(["restart", "-p", "demo", "-b", "-vb"])
+        mock_workspace.return_value.is_active_project_running.return_value = True
+        run_cli(["restart", "-b", "-vb"])
         # Should call down (no build), then up (with build)
         assert mock_compose.call_count == 2
         assert mock_compose.call_args_list[0][0][2] is False  # build for down
@@ -46,7 +48,8 @@ def test_restart_with_app_flag():
          patch("arches_containers.main.AcOutputManager"):
         mock_settings = mock_workspace.return_value.get_settings.return_value
         mock_settings.get_active_project.return_value.project_name = "demo"
-        run_cli(["restart", "-p", "demo", "--app"])
+        mock_workspace.return_value.is_active_project_running.return_value = True
+        run_cli(["restart", "--app"])
         # Should call down then up with app container type
         assert mock_compose.call_count == 2
         assert mock_compose.call_args_list[0][0][4] == "app"  # container_type for down
@@ -59,7 +62,8 @@ def test_restart_with_dep_flag():
          patch("arches_containers.main.AcOutputManager"):
         mock_settings = mock_workspace.return_value.get_settings.return_value
         mock_settings.get_active_project.return_value.project_name = "demo"
-        run_cli(["restart", "-p", "demo", "--dep"])
+        mock_workspace.return_value.is_active_project_running.return_value = True
+        run_cli(["restart", "--dep"])
         # Should call down then up with dep container type
         assert mock_compose.call_count == 2
         assert mock_compose.call_args_list[0][0][4] == "dep"  # container_type for down
@@ -120,6 +124,22 @@ def test_up_initialised_project_skips_init():
         mock_clone.assert_called_once()
         mock_init.assert_not_called()
         mock_compose.assert_called_once()
+
+
+def test_restart_blocked_when_no_containers_running():
+    """Issue #101: restart should fail if no containers are currently running."""
+    with patch("arches_containers.main.compose_project") as mock_compose, \
+         patch("arches_containers.main.arches_repo_helper.clone_and_checkout_repo"), \
+         patch("arches_containers.main.AcWorkspace") as mock_workspace, \
+         patch("arches_containers.main.AcOutputManager") as mock_output:
+        mock_settings = mock_workspace.return_value.get_settings.return_value
+        mock_settings.get_active_project.return_value.project_name = "demo"
+        mock_workspace.return_value.is_active_project_running.return_value = False
+        mock_output.fail.side_effect = SystemExit(1)
+        run_cli(["restart"])
+        mock_output.fail.assert_called_once()
+        assert "No containers are currently running" in mock_output.fail.call_args[0][0]
+        mock_compose.assert_not_called()
 
 
 def test_app_and_dep_flags_mutually_exclusive():

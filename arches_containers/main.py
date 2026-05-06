@@ -224,6 +224,8 @@ def main():
                 args.project_name = ac_settings.get_active_project().project_name
             except Exception:
                 AcOutputManager.fail("🔴 No active project set. Run 'act activate' to set an active project.")
+            if not ac_workspace.is_active_project_running():
+                AcOutputManager.fail("🔴 No containers are currently running. Run 'act up' to start the project first.")
         elif args.project_name == "" and args.command != "activate":
             try:
                 args.project_name = ac_settings.get_active_project().project_name
@@ -270,6 +272,12 @@ def main():
                 AcOutputManager.pretty_write_args(vars(args))
 
             if args.command == "activate":
+                current_active = ac_settings.get_active_project_name()
+                if current_active and current_active != args.project_name and ac_workspace.is_active_project_running():
+                    AcOutputManager.fail(
+                        f"🔴 Project '{current_active}' is currently up. "
+                        f"Run 'act down' to stop it before activating another project."
+                    )
                 ac_settings.set_active_project(args.project_name)
                 arches_repo_helper.clone_and_checkout_repo(args.project_name, verbose=args.verbose)
                 AcOutputManager.complete_step(f"Project '{args.project_name}' set as active.")

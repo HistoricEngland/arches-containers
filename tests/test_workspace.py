@@ -4,6 +4,7 @@ import shutil
 import json
 import platform
 from types import SimpleNamespace
+from unittest.mock import patch
 from arches_containers.utils.workspace import (
     AcWorkspace, 
     AcSettings, 
@@ -260,6 +261,27 @@ class TestAcWorkspace:
         ]
         # Export should be cancelled without prompting, so no timestamp backup should be created.
         assert backup_candidates == []
+
+class TestAcWorkspaceIsActiveProjectRunning:
+    def test_returns_true_when_containers_running(self, workspace_with_project):
+        workspace, project_name = workspace_with_project
+        workspace.get_settings().set_active_project(project_name)
+        with patch("arches_containers.utils.workspace.has_running_project_containers", return_value=True):
+            assert workspace.is_active_project_running() is True
+
+    def test_returns_false_when_no_containers_running(self, workspace_with_project):
+        workspace, project_name = workspace_with_project
+        workspace.get_settings().set_active_project(project_name)
+        with patch("arches_containers.utils.workspace.has_running_project_containers", return_value=False):
+            assert workspace.is_active_project_running() is False
+
+    def test_returns_false_when_no_active_project(self, temp_workspace):
+        temp_workspace.get_settings().clear_active_project()
+        with patch("arches_containers.utils.workspace.has_running_project_containers") as mock_check:
+            result = temp_workspace.is_active_project_running()
+        assert result is False
+        mock_check.assert_not_called()
+
 
 class TestAcSettings:
     def test_settings_creation(self, temp_workspace):
