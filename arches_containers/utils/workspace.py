@@ -569,6 +569,24 @@ class AcWorkspace:
         '''
         return AcSettings(self)
 
+    def is_active_project_running(self) -> bool:
+        '''
+        Returns True if the active project has any running containers.
+        '''
+        try:
+            settings = self.get_settings()
+            if settings.settings["active_project"] == "":
+                return False
+            active_project = settings.get_active_project()
+            if active_project is None:
+                return False
+            return has_running_project_containers(
+                active_project.project_name,
+                active_project[AcProjectAttributes.PROJECT_NAME_URLSAFE.value],
+            )
+        except Exception:
+            return False
+
     def export_project(self, project_name, repo_path, keep_repo_hash=None, prompt_default=None):
         '''
         Exports a project from the .arches-containers folder to the root of a given repo folder.
