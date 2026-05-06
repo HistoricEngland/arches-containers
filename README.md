@@ -139,6 +139,8 @@ act down [-p <project_name>] [-vb] [--app | --dep]
 
 Restarts the project containers by stopping and then starting them. Useful for applying changes such as new dependencies or forcing a rebuild. Always operates on the active project.
 
+> ℹ️ The restart command will fail if the active project's containers are not currently running. Use `act up` to start the project first.
+
 ```sh
 cd /path/to/workspace
 act restart [-b] [-vb] [--app | --dep]
@@ -193,6 +195,8 @@ act activate -p <project_name> [-vb]
 
 - `-p`, `--project_name`: The name of the project to activate. If omitted, an interactive selector is shown.
 - `-vb`, `--verbose`: Print verbose output during the compose processes.
+
+> ℹ️ Activating a different project will fail if the current active project's containers are running. Use `act down` to stop them first.
 
 ### List Projects
 
