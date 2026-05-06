@@ -11,6 +11,75 @@ from arches_containers.utils.create_launch_config import generate_launch_config
 from arches_containers.utils.logger import AcOutputManager
 
 
+def _interactive_project_select(message, choices):
+    """Arrow-key selector. Returns the chosen string, or None if Esc/Ctrl-C is pressed."""
+    from prompt_toolkit import Application
+    from prompt_toolkit.key_binding import KeyBindings
+    from prompt_toolkit.layout import Layout
+    from prompt_toolkit.layout.containers import Window
+    from prompt_toolkit.layout.controls import FormattedTextControl
+
+    current = [0]
+    selection = [None]
+    kb = KeyBindings()
+
+    @kb.add("up")
+    def _up(event):
+        current[0] = (current[0] - 1) % len(choices)
+
+    @kb.add("down")
+    def _down(event):
+        current[0] = (current[0] + 1) % len(choices)
+
+    @kb.add("enter")
+    def _enter(event):
+        selection[0] = choices[current[0]]
+        event.app.exit()
+
+    @kb.add("escape")
+    @kb.add("c-c")
+    def _cancel(event):
+        event.app.exit()
+
+    def render():
+        lines = []
+        lines.append(("", "  (up/down arrow keys  Enter to confirm  Esc to cancel)\n\n"))
+        for i, choice in enumerate(choices):
+            if i == current[0]:
+                lines.append(("fg:ansigreen bold", f"  > {choice}\n"))
+            else:
+                lines.append(("", f"    {choice}\n"))
+        return lines
+
+    Application(
+        layout=Layout(Window(FormattedTextControl(render, focusable=False))),
+        key_bindings=kb,
+        full_screen=False,
+        refresh_interval=0.05,
+    ).run()
+    return selection[0]
+
+
+def _prompt_for_text(prompt):
+    """Show a simple text-input prompt. Returns the entered string, or None if Esc/Ctrl-C."""
+    from prompt_toolkit import prompt as pt_prompt
+    from prompt_toolkit.keys import Keys
+    from prompt_toolkit.key_binding import KeyBindings
+    cancelled = [False]
+    kb = KeyBindings()
+
+    @kb.add("escape")
+    def _esc(event):
+        cancelled[0] = True
+        event.app.exit(exception=KeyboardInterrupt)
+
+    try:
+        value = pt_prompt(prompt, key_bindings=kb).strip()
+    except (KeyboardInterrupt, EOFError):
+        return None
+    return value if value else None
+
+
 def _warn_if_project_unsupported(project_name, ac_project):
     """Emit a one-line warning if the project uses an unsupported Arches version (< 7.6)."""
     project_version = ac_project._config.get(AcProjectAttributes.PROJECT_ARCHES_VERSION.value, "")
@@ -25,8 +94,8 @@ def main():
     
     # Sub-parser for the create command
     parser_create = subparsers.add_parser("create", help="Create a new container project", formatter_class=parser.formatter_class)
-    parser_create.add_argument("-p", "--project_name", required=True, help="The name of the project. This value will be slugified to lowercase with underscore separators")
-    parser_create.add_argument("-v", "--version", "--ver", required=True, help="The arches version the project will be using (major.minor format)")
+    parser_create.add_argument("-p", "--project_name", required=False, default=None, help="The name of the project. This value will be slugified to lowercase with underscore separators")
+    parser_create.add_argument("-v", "--version", "--ver", required=False, default=None, help="The arches version the project will be using (major.minor format)")
     parser_create.add_argument("-r", "--repo_name", help="The name of the local repository folder to create for the project. v7.6 and higher only.")
     parser_create.add_argument("-o", "--organization", default="archesproject", help="The GitHub organization of the arches repo (default: archesproject)")
     parser_create.add_argument("-br", "--branch", help="The branch of the arches repo to use. Default is the 'dev/<version>.x' branch.")
@@ -52,7 +121,6 @@ def main():
 
     # Sub-parser for restarting containers
     parser_restart = subparsers.add_parser("restart", help="Restart the project containers (down + up)", formatter_class=parser.formatter_class)
-    parser_restart.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
     parser_restart.add_argument("-b", "--build", action="store_true", help="Rebuild containers when composing up")
     parser_restart.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
     container_group_restart = parser_restart.add_mutually_exclusive_group()
@@ -61,7 +129,7 @@ def main():
 
     # Sub-parser for activating project
     parser_activate = subparsers.add_parser("activate", help="Set a project as the active project", formatter_class=parser.formatter_class)
-    parser_activate.add_argument("-p", "--project_name", required=True, help="The name of the project to activate")
+    parser_activate.add_argument("-p", "--project_name", required=False, default=None, help="The name of the project to activate. If omitted, an interactive selector is shown.")
     parser_activate.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
 
     # Sub-parser for the list command
@@ -69,7 +137,7 @@ def main():
     
     # Sub-parser for the delete command
     parser_delete = subparsers.add_parser("delete", help="Delete an existing container project", formatter_class=parser.formatter_class)
-    parser_delete.add_argument("-p", "--project_name", required=True, help="The name of the project to delete")
+    parser_delete.add_argument("-p", "--project_name", required=False, default=None, help="The name of the project to delete. If omitted, an interactive selector is shown.")
     
     # Sub-parser for the generate-launch-config command
     parser_launch = subparsers.add_parser("generate-debug-config", help="Generate vscode launch.json configuration for the workspace", formatter_class=parser.formatter_class)
@@ -85,7 +153,7 @@ def main():
 
     # Sub-parser for the import command
     parser_import = subparsers.add_parser("import", help="Import a project from a given repository folder", formatter_class=parser.formatter_class)
-    parser_import.add_argument("-p", "--project_name", required=True, help="The name of the project to import.")
+    parser_import.add_argument("-p", "--project_name", required=False, default=None, help="The name of the project to import. If omitted, importable projects are discovered interactively.")
     parser_import.add_argument("-r", "--repo_path", help="The path to the repository folder if different to the default.")
     import_hash_group = parser_import.add_mutually_exclusive_group()
     import_hash_group.add_argument("--new-hash", action="store_true", default=None, help="Generate a new hash after import.")
@@ -124,6 +192,22 @@ def main():
 
     # ========================================================================================================
     if args.command == "create":
+        if args.project_name is None:
+            AcOutputManager.write("▶️  Create Project")
+            AcOutputManager.write("  Enter a project name (e.g. 'My Arches Project'). This will be slugified to lowercase with underscores (e.g. 'my_arches_project').")
+            entered = _prompt_for_text("  Project name: ")
+            if entered is None:
+                AcOutputManager.write("Creation cancelled.")
+                exit(0)
+            args.project_name = entered
+        if args.version is None:
+            version_items = ac_workspace.list_available_versions()
+            AcOutputManager.write("  Select an Arches version for your project:")
+            selected_version = _interactive_project_select("", [v["display_name"] for v in version_items])
+            if selected_version is None:
+                AcOutputManager.write("Creation cancelled.")
+                exit(0)
+            args.version = next(v["version"] for v in version_items if v["display_name"] == selected_version)
         with AcOutputManager("Creating project") as spinner:
             AcOutputManager.write(f"▶️  Creating project: {args.project_name}")
             
@@ -135,11 +219,39 @@ def main():
                 AcOutputManager.warn(f"Arches version {args.version} is no longer actively maintained, so this template may not work as expected and need manual adjustments to fix.")
     # ========================================================================================================
     elif args.command in ["up", "down", "activate", "restart"]:
-        if args.project_name == "" and args.command != "activate":
+        if args.command == "restart":
+            try:
+                args.project_name = ac_settings.get_active_project().project_name
+            except Exception:
+                AcOutputManager.fail("🔴 No active project set. Run 'act activate' to set an active project.")
+        elif args.project_name == "" and args.command != "activate":
             try:
                 args.project_name = ac_settings.get_active_project().project_name
             except Exception as e:
-                AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
+                AcOutputManager.fail("🔴 No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
+
+        if args.command == "activate" and args.project_name is None:
+            projects = ac_workspace.list_projects()
+            if not projects:
+                AcOutputManager.fail("🔴 No projects found. Run 'act create' to create a new project.")
+                exit(1)
+            try:
+                active_project_name = ac_settings.get_active_project().project_name
+            except Exception:
+                active_project_name = None
+            choices = [
+                f"{p} (active)" if p == active_project_name else p
+                for p in projects
+            ]
+            AcOutputManager.write("▶️ Activate Project...")
+            selected = _interactive_project_select(
+                "",
+                choices,
+            )
+            if selected is None:
+                AcOutputManager.write("Selection cancelled.")
+                exit(0)
+            args.project_name = selected.removesuffix(" (active)")
 
         with AcOutputManager(f"Running {args.command} command for project: {args.project_name}") as spinner:
             AcOutputManager.write(f"▶️  {args.command.capitalize()} command for project: {args.project_name}")
@@ -198,6 +310,29 @@ def main():
 
     # ========================================================================================================
     elif args.command == "delete":
+        if args.project_name is None:
+            projects = ac_workspace.list_projects()
+            if not projects:
+                AcOutputManager.fail("🔴 No projects found. Run 'act create' to create a new project.")
+                exit(1)
+            try:
+                active_project_name = ac_settings.get_active_project().project_name
+            except Exception:
+                active_project_name = None
+            choices = [
+                f"{p} (active)" if p == active_project_name else p
+                for p in projects
+            ]
+            AcOutputManager.write("▶️ Delete Project...")
+            selected = _interactive_project_select("", choices)
+            if selected is None:
+                AcOutputManager.write("Selection cancelled.")
+                exit(0)
+            args.project_name = selected.removesuffix(" (active)")
+        confirm = input(f"  Are you sure you want to delete '{args.project_name}'? [y/N] ").strip().lower()
+        if confirm != "y":
+            AcOutputManager.write("Deletion cancelled.")
+            exit(0)
         AcOutputManager.write(f"▶️  Deleting project: {args.project_name}")
         with AcOutputManager(f"Deleting project: {args.project_name}") as spinner:
             ac_workspace.delete_project(args.project_name)
@@ -210,15 +345,27 @@ def main():
     # ========================================================================================================
     elif args.command == "export":
         AcOutputManager.write("▶️  Exporting project")
-        if args.project_name == "" or args.project_name is None:
+        if args.project_name is None or args.project_name == "":
+            projects = ac_workspace.list_projects()
+            if not projects:
+                AcOutputManager.fail("🔴 No projects found. Run 'act create' to create a new project.")
+                exit(1)
             try:
-                args.project_name = ac_settings.get_active_project_name()
-                
-            except Exception as e:
-                AcOutputManager.fail("No project name passed and no active project set. Run 'arches-containers create' to create a new project.")
+                active_project_name = ac_settings.get_active_project().project_name
+            except Exception:
+                active_project_name = None
+            choices = [
+                f"{p} (active)" if p == active_project_name else p
+                for p in projects
+            ]
+            selected = _interactive_project_select("Select a project to export:", choices)
+            if selected is None:
+                AcOutputManager.write("Selection cancelled.")
+                exit(0)
+            args.project_name = selected.removesuffix(" (active)")
         export_project = ac_workspace.get_project(args.project_name)
         _warn_if_project_unsupported(args.project_name, export_project)
-        repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
+        repo_path = args.repo_path if args.repo_path else ac_workspace._get_project_repo_path(args.project_name)
         prompt_default = True if args.yes else False if args.no else None
         ac_workspace.export_project(
             args.project_name,
@@ -229,12 +376,27 @@ def main():
     
     # ========================================================================================================
     elif args.command == "import":
-        AcOutputManager.write("▶️  Importing project")
-        if args.project_name == "" or args.project_name is None:
-            AcOutputManager.fail("Project name is required for import.")
-
-        repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
+        AcOutputManager.write("▶️  Import project")
+        if args.project_name is None or args.project_name == "":
+            with AcOutputManager(f"... Discovering importable projects") as spinner:
+                AcOutputManager.text("... Discovering importable projects")
+                discovered = ac_workspace.discover_importable_projects()
+            if not discovered:
+                AcOutputManager.fail("🔴 No importable projects found. Ensure the repository folder contains a .ac_<project_name>/config.json file.")
+                exit(1)
+            choices = [d["display_name"] for d in discovered]
+            selected = _interactive_project_select("Select a project to import:", choices)
+            if selected is None:
+                AcOutputManager.write("Selection cancelled.")
+                exit(0)
+            match = next(d for d in discovered if d["display_name"] == selected)
+            args.project_name = match["project_name"]
+            import_repo_path = match["repo_path"]
+        else:
+            import_repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
+        repo_path = args.repo_path if args.repo_path else import_repo_path
         prompt_default = True if args.yes else False if args.no else None
+        AcOutputManager.write("... Importing project")
         ac_workspace.import_project(
             args.project_name,
             repo_path,

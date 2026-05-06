@@ -60,6 +60,14 @@ act [OPTIONS] COMMAND [ARGS]...
 
     This creates the arches-container project configuration and sets it as the active project.
 
+    Run without arguments to use the interactive prompts:
+
+    ```sh
+    act create
+    ```
+
+    Or pass arguments directly:
+
     ```sh
     act create -p my_project -v 8.1 --activate
     ```
@@ -78,13 +86,22 @@ act [OPTIONS] COMMAND [ARGS]...
 
 Steps to create a new container project.
 
+Run without arguments to use the interactive prompts — you will be asked to type a project name and then select an Arches version from the available templates:
+
+```sh
+cd /path/to/workspace
+act create
+```
+
+Or pass all arguments directly:
+
 ```sh
 cd /path/to/workspace
 act create -p <project_name> -v <version> [-r <repo_name>] [-o <organization>] [--activate]
 ```
 
-- `-p`, `--project_name`: The name of the project. This value will be slugified to lowercase with underscore separators.
-- `-v`, `--version`, `--ver`: The Arches version the project will be using (major.minor format).
+- `-p`, `--project_name`: The name of the project. This value will be slugified to lowercase with underscore separators. If omitted, you will be prompted to enter one.
+- `-v`, `--version`, `--ver`: The Arches version the project will be using (major.minor format). If omitted, you will be presented with a list of available versions sourced from the bundled templates, sorted newest-first. Unsupported versions are labelled.
 - `-r`, `--repo_name`: The name of the local repository folder to create for the project. v7.6 and higher only.
 - `-o`, `--organization`: The GitHub organization of the Arches repo (default: archesproject).
 - `--activate`: Activate the project after creation. If it is the first project then it will be activated by default.
@@ -120,18 +137,17 @@ act down [-p <project_name>] [-vb] [--app | --dep]
 
 #### Restart a Project
 
-Restarts the project containers by stopping and then starting them. Useful for applying changes such as new dependencies or forcing a rebuild.
+Restarts the project containers by stopping and then starting them. Useful for applying changes such as new dependencies or forcing a rebuild. Always operates on the active project.
 
 ```sh
 cd /path/to/workspace
-act restart [-p <project_name>] [-b] [-vb] [--app | --dep]
+act restart [-b] [-vb] [--app | --dep]
 ```
 
-- `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
 - `-b`, `--build`: Rebuild containers when composing up (after stopping them).
 - `-vb`, `--verbose`: Print verbose output during the compose processes.
-- `--app`: Only operate on application containers (docker-compose.yml). Mutually exclusive with --dep.
-- `--dep`: Only operate on dependency containers (docker-compose-dependencies.yml). Mutually exclusive with --app.
+- `--app`: Only operate on application containers (docker-compose.yml). Mutually exclusive with `--dep`.
+- `--dep`: Only operate on dependency containers (docker-compose-dependencies.yml). Mutually exclusive with `--app`.
 
 **Examples:**
 
@@ -161,12 +177,21 @@ act restart --dep -b
 
 #### Activate a Project
 
+Run without `-p` to choose from an interactive list of available projects (the currently active project is labelled):
+
+```sh
+cd /path/to/workspace
+act activate
+```
+
+Or pass the project name directly:
+
 ```sh
 cd /path/to/workspace
 act activate -p <project_name> [-vb]
 ```
 
-- `-p`, `--project_name`: The name of the project to activate.
+- `-p`, `--project_name`: The name of the project to activate. If omitted, an interactive selector is shown.
 - `-vb`, `--verbose`: Print verbose output during the compose processes.
 
 ### List Projects
@@ -180,14 +205,21 @@ act list
 
 ### Delete a Project
 
-Steps to delete an existing container project.
+Run without `-p` to choose from an interactive list of available projects (the currently active project is labelled). You will be asked to confirm before the project is deleted:
 
 ```sh
 cd /path/to/workspace
-act delete -p <project_name>
+act delete
 ```
 
-- `-p`, `--project_name`: The name of the project to delete.
+Or pass the project name directly:
+
+```sh
+cd /path/to/workspace
+act delete [-p <project_name>]
+```
+
+- `-p`, `--project_name`: The name of the project to delete. If omitted, an interactive selector is shown.
 
 ### Generate Debug Config
 
@@ -200,16 +232,25 @@ act generate-debug-config
 
 ### Export a Project
 
-The user can export an arches-container project to a repository folder. This is useful when the user wants to share the project with others or store it in a version control system. The export command will create a folder called `.ac` in the repository folder and copy the necessary files to it.
+The user can export an arches-container project to a repository folder. This is useful when the user wants to share the project with others or store it in a version control system. The export command will create a folder called `.ac_<project_name>` in the repository folder and copy the necessary files to it.
 
-The docker compose files in the exported arches-container project will need to be run manually as the command only access those in the `.arches-containers` folder.
+The docker compose files in the exported arches-container project will need to be run manually as the command only accesses those in the `.arches-containers` folder.
+
+Run without `-p` to choose from an interactive list of available projects:
+
+```sh
+cd /path/to/workspace
+act export
+```
+
+Or pass arguments directly:
 
 ```sh
 cd /path/to/workspace
 act export [-p <project_name>] [-r <repo_path>] [--keep-repo-hash] [--yes|--no]
 ```
 
-- `-p`, `--project_name`: The name of the project to export. Default is the active project.
+- `-p`, `--project_name`: The name of the project to export. If omitted, an interactive selector is shown.
 - `-r`, `--repo_path`: The path to the repository folder if different to the default.
 - `--keep-repo-hash`: Keep the hash from an existing `.ac_<project_name>` config in the target repository.
 - `--yes`: Answer yes to all export prompts (non-interactive mode).
@@ -221,11 +262,20 @@ If `--keep-repo-hash` is not passed and the target `.ac_<project_name>` already 
 
 The user can import an arches-container project from a repository folder. This is useful when the user wants to use a project that has been shared with them or stored in a version control system.
 
+Run without `-p` to discover importable projects automatically. The CLI scans the workspace for `.ac_*/config.json` files at any depth and presents a list to choose from. Where the same project name exists in multiple locations, the relative path is shown to disambiguate:
+
 ```sh
-act import -p <project_name> [-r <repo_path>] [--new-hash | --hash <abc12>] [--yes|--no]
+cd /path/to/workspace
+act import
 ```
 
-- `-p`, `--project_name`: The name of the project to import. It will look for a folder at the path  in the repository folder.
+Or pass arguments directly:
+
+```sh
+act import [-p <project_name>] [-r <repo_path>] [--new-hash | --hash <abc12>] [--yes|--no]
+```
+
+- `-p`, `--project_name`: The name of the project to import. If omitted, importable projects are discovered interactively.
 - `-r`, `--repo_path`: The path to the repository folder if different to the default.
 - `--new-hash`: Generate a new hash for the imported project.
 - `--hash`: Set an explicit 5-character lowercase hexadecimal hash for the imported project.
