@@ -121,7 +121,6 @@ def main():
 
     # Sub-parser for restarting containers
     parser_restart = subparsers.add_parser("restart", help="Restart the project containers (down + up)", formatter_class=parser.formatter_class)
-    parser_restart.add_argument("-p", "--project_name", default="", help="The name of the project. If excluded, the active project will be used.")
     parser_restart.add_argument("-b", "--build", action="store_true", help="Rebuild containers when composing up")
     parser_restart.add_argument("-vb", "--verbose", action="store_true", help="Print verbose output during the compose processes")
     container_group_restart = parser_restart.add_mutually_exclusive_group()
@@ -220,7 +219,12 @@ def main():
                 AcOutputManager.warn(f"Arches version {args.version} is no longer actively maintained, so this template may not work as expected and need manual adjustments to fix.")
     # ========================================================================================================
     elif args.command in ["up", "down", "activate", "restart"]:
-        if args.project_name == "" and args.command != "activate":
+        if args.command == "restart":
+            try:
+                args.project_name = ac_settings.get_active_project().project_name
+            except Exception:
+                AcOutputManager.fail("🔴 No active project set. Run 'act activate' to set an active project.")
+        elif args.project_name == "" and args.command != "activate":
             try:
                 args.project_name = ac_settings.get_active_project().project_name
             except Exception as e:

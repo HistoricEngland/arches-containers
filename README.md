@@ -137,18 +137,17 @@ act down [-p <project_name>] [-vb] [--app | --dep]
 
 #### Restart a Project
 
-Restarts the project containers by stopping and then starting them. Useful for applying changes such as new dependencies or forcing a rebuild.
+Restarts the project containers by stopping and then starting them. Useful for applying changes such as new dependencies or forcing a rebuild. Always operates on the active project.
 
 ```sh
 cd /path/to/workspace
-act restart [-p <project_name>] [-b] [-vb] [--app | --dep]
+act restart [-b] [-vb] [--app | --dep]
 ```
 
-- `-p`, `--project_name`: The name of the project. If excluded, the active project will be used.
 - `-b`, `--build`: Rebuild containers when composing up (after stopping them).
 - `-vb`, `--verbose`: Print verbose output during the compose processes.
-- `--app`: Only operate on application containers (docker-compose.yml). Mutually exclusive with --dep.
-- `--dep`: Only operate on dependency containers (docker-compose-dependencies.yml). Mutually exclusive with --app.
+- `--app`: Only operate on application containers (docker-compose.yml). Mutually exclusive with `--dep`.
+- `--dep`: Only operate on dependency containers (docker-compose-dependencies.yml). Mutually exclusive with `--app`.
 
 **Examples:**
 
