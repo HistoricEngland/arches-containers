@@ -1,1 +1,1 @@
-AC_VERSION = "1.1.0rc2"
+AC_VERSION = "1.1.0"
