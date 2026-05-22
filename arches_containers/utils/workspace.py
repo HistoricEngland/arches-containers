@@ -688,6 +688,7 @@ class AcWorkspace:
         
         shutil.copytree(ac_repo_path, project_path, dirs_exist_ok=True)
         
+        repo_dir_name = os.path.basename(repo_path)
         # Modify Docker YAML files
         for root, dirs, files in os.walk(project_path):
             for file in files:
@@ -695,7 +696,7 @@ class AcWorkspace:
                     file_path = os.path.join(root, file)
                     with open(file_path, "r+") as f:
                         content = f.read()
-                        content = content.replace(f"/{project_name}/{IMPORT_AC_FOLDER}", f"/.arches_containers/{project_name}")
+                        content = content.replace(f"/{repo_dir_name}/{IMPORT_AC_FOLDER}", f"/.arches_containers/{project_name}")
                         f.seek(0)
                         f.write(content)
                         f.truncate()
