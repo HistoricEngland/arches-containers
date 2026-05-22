@@ -119,6 +119,25 @@ class TestAcWorkspace:
         if line is not None:
             assert line.strip().startswith("platform: linux/arm64")
 
+    def test_import_project_rewrites_paths_when_repo_dir_differs_from_project_name(self, workspace_with_project, tmp_path):
+        """Importing from a directory whose name differs from project_name (e.g. act-configs structure)
+        should correctly rewrite YAML paths to /.arches_containers/<project_name>."""
+        workspace, project_name = workspace_with_project
+        # Use a directory name that does NOT match project_name, simulating act-configs layout
+        repo_path = tmp_path / "arches-her"
+        repo_path.mkdir()
+
+        workspace.export_project(project_name, str(repo_path))
+        workspace.delete_project(project_name)
+        workspace.import_project(project_name, str(repo_path), new_hash=False)
+
+        compose_path = os.path.join(workspace._get_ac_directory_path(), project_name, "docker-compose.yml")
+        if os.path.exists(compose_path):
+            with open(compose_path) as f:
+                content = f.read()
+            assert f"/.arches_containers/{project_name}" in content
+            assert f"/arches-her/.ac_{project_name}" not in content
+
     def test_import_project_with_explicit_hash(self, workspace_with_project, tmp_path):
         workspace, project_name = workspace_with_project
         repo_path = tmp_path / "test_repo_explicit_hash"
