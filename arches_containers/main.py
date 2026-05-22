@@ -421,14 +421,14 @@ def main():
                     match = next(e for e in catalog if e["display_name"] == selected)
                 AcOutputManager.write(f"... Downloading config from remote...")
                 try:
-                    tmpdir = download_config_to_tempdir(match)
+                    tmpdir, import_path = download_config_to_tempdir(match)
                 except RuntimeError as exc:
                     AcOutputManager.fail(f"🔴 {exc}")
                     exit(1)
                 prompt_default = True if args.yes else False if args.no else None
                 ac_workspace.import_project(
                     match["project_name"],
-                    tmpdir,
+                    import_path,
                     new_hash=args.new_hash,
                     target_hash=args.hash_value,
                     prompt_default=prompt_default,

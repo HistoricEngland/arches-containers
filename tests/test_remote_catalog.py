@@ -326,6 +326,7 @@ def test_fetch_remote_catalog_skips_cache_when_none():
 def test_download_config_to_tempdir_creates_ac_folder(tmp_path, monkeypatch):
     entry = {
         "project_name": "arches_her",
+        "catalog_version": "1.1",
         "remote_folder": "arches-her/1.1/.ac_arches_her",
         "all_files": [
             "arches-her/1.1/.ac_arches_her/config.json",
@@ -347,24 +348,26 @@ def test_download_config_to_tempdir_creates_ac_folder(tmp_path, monkeypatch):
 
     import tempfile
 
-    original_mkdtemp = tempfile.mkdtemp
-
     def controlled_mkdtemp(**kwargs):
         return str(tmp_path / "act_catalog_test")
 
     monkeypatch.setattr(tempfile, "mkdtemp", controlled_mkdtemp)
 
-    tmpdir = download_config_to_tempdir(entry)
+    tmpdir, import_path = download_config_to_tempdir(entry)
 
-    assert os.path.isdir(os.path.join(tmpdir, ".ac_arches_her"))
-    assert os.path.isfile(os.path.join(tmpdir, ".ac_arches_her", "config.json"))
-    assert os.path.isfile(os.path.join(tmpdir, ".ac_arches_her", "docker", "entrypoint.sh"))
+    # import_path should be tmpdir/catalog_version so import_project resolves
+    # repo_dir_name = "1.1" — matching paths like "./1.1/.ac_arches_her/..." in compose files
+    assert os.path.basename(import_path) == "1.1"
+    assert os.path.isdir(os.path.join(import_path, ".ac_arches_her"))
+    assert os.path.isfile(os.path.join(import_path, ".ac_arches_her", "config.json"))
+    assert os.path.isfile(os.path.join(import_path, ".ac_arches_her", "docker", "entrypoint.sh"))
     assert file_counter[0] == 2
 
 
 def test_download_config_to_tempdir_raises_on_http_error(monkeypatch):
     entry = {
         "project_name": "arches_her",
+        "catalog_version": "1.1",
         "remote_folder": "arches-her/1.1/.ac_arches_her",
         "all_files": ["arches-her/1.1/.ac_arches_her/config.json"],
     }
@@ -379,6 +382,7 @@ def test_download_config_to_tempdir_raises_on_http_error(monkeypatch):
 def test_download_config_to_tempdir_raises_on_network_error(monkeypatch):
     entry = {
         "project_name": "arches_her",
+        "catalog_version": "1.1",
         "remote_folder": "arches-her/1.1/.ac_arches_her",
         "all_files": ["arches-her/1.1/.ac_arches_her/config.json"],
     }

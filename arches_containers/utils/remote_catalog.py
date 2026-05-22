@@ -170,49 +170,64 @@ def download_config_to_tempdir(catalog_entry):
     temporary directory structured as:
 
         <tmpdir>/
-          .ac_<project_name>/
-            config.json
-            Dockerfile
-            docker/
-              ...
+          <catalog_version>/          ← matches the version dir in act-configs
+            .ac_<project_name>/
+              config.json
+              Dockerfile
+              docker/
+                ...
 
-    Returns the tmpdir path. The caller is responsible for cleanup (e.g. via
-    shutil.rmtree).
+    The inner path ``<tmpdir>/<catalog_version>`` is returned alongside the
+    root tmpdir so that ``import_project()``'s path-rewriting logic resolves
+    the correct ``repo_dir_name`` (= ``catalog_version``) when replacing
+    compose-file references like ``./1.1/.ac_<project>/`` with
+    ``/.arches_containers/<project>/``.
+
+    Returns a tuple ``(tmpdir, import_path)`` where ``import_path`` is the
+    directory to pass to ``import_project()`` and ``tmpdir`` is the root to
+    clean up afterwards.
     """
     project_name = catalog_entry["project_name"]
     remote_folder = catalog_entry["remote_folder"]
     all_files = catalog_entry["all_files"]
+    catalog_version = catalog_entry["catalog_version"]
 
     tmpdir = tempfile.mkdtemp(prefix="act_catalog_")
-    ac_folder_name = f".ac_{project_name}"
-    ac_folder_path = os.path.join(tmpdir, ac_folder_name)
-    os.makedirs(ac_folder_path, exist_ok=True)
+    try:
+        inner_path = os.path.join(tmpdir, catalog_version)
+        ac_folder_name = f".ac_{project_name}"
+        ac_folder_path = os.path.join(inner_path, ac_folder_name)
+        os.makedirs(ac_folder_path, exist_ok=True)
 
-    headers = _github_api_headers()
-    for file_path in all_files:
-        rel = os.path.relpath(file_path, remote_folder)
-        dest_path = os.path.join(ac_folder_path, rel)
-        dest_dir = os.path.dirname(dest_path)
-        if dest_dir:
-            os.makedirs(dest_dir, exist_ok=True)
+        headers = _github_api_headers()
+        for file_path in all_files:
+            rel = os.path.relpath(file_path, remote_folder)
+            dest_path = os.path.join(ac_folder_path, rel)
+            dest_dir = os.path.dirname(dest_path)
+            if dest_dir:
+                os.makedirs(dest_dir, exist_ok=True)
 
-        raw_url = (
-            f"https://raw.githubusercontent.com/{CATALOG_REPO}"
-            f"/{CATALOG_BRANCH}/{file_path}"
-        )
-        req = urllib.request.Request(raw_url, headers=headers)
-        try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                with open(dest_path, "wb") as out:
-                    out.write(resp.read())
-        except urllib.error.HTTPError as exc:
-            raise RuntimeError(
-                f"Failed to download remote file '{file_path}' (HTTP {exc.code})."
-            ) from exc
-        except urllib.error.URLError as exc:
-            raise RuntimeError(
-                f"Unable to download '{file_path}'. "
-                f"Check your internet connection. ({exc.reason})"
-            ) from exc
+            raw_url = (
+                f"https://raw.githubusercontent.com/{CATALOG_REPO}"
+                f"/{CATALOG_BRANCH}/{file_path}"
+            )
+            req = urllib.request.Request(raw_url, headers=headers)
+            try:
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    with open(dest_path, "wb") as out:
+                        out.write(resp.read())
+            except urllib.error.HTTPError as exc:
+                raise RuntimeError(
+                    f"Failed to download remote file '{file_path}' (HTTP {exc.code})."
+                ) from exc
+            except urllib.error.URLError as exc:
+                raise RuntimeError(
+                    f"Unable to download '{file_path}'. "
+                    f"Check your internet connection. ({exc.reason})"
+                ) from exc
+    except Exception:
+        import shutil as _shutil
+        _shutil.rmtree(tmpdir, ignore_errors=True)
+        raise
 
-    return tmpdir
+    return tmpdir, inner_path
