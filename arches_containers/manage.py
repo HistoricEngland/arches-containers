@@ -83,7 +83,7 @@ def compose_project(project_name, action="up", build=False, verbose=False, conta
     
     for compose_file in compose_files:
         if compose_file == DOCKER_COMPOSE_FILE and action == "up":
-            subprocess.run(["sleep", "15"])
+            sleep(15)
 
         compose_file_path = os.path.join(project_path, compose_file)
 
