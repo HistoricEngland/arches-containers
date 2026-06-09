@@ -9,6 +9,7 @@ import arches_containers.utils.arches_repo_helper as arches_repo_helper
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject, AcProjectAttributes, _is_version_supported
 from arches_containers.utils.create_launch_config import generate_launch_config
 from arches_containers.utils.logger import AcOutputManager
+from arches_containers.utils.remote_catalog import fetch_remote_catalog, download_config_to_tempdir, CATALOG_REPO
 
 
 def _interactive_project_select(message, choices):
@@ -161,6 +162,7 @@ def main():
     import_prompt_group = parser_import.add_mutually_exclusive_group()
     import_prompt_group.add_argument("--yes", action="store_true", help="Answer yes to import prompts for non-interactive use.")
     import_prompt_group.add_argument("--no", action="store_true", help="Answer no to import prompts for non-interactive use.")
+    parser_import.add_argument("--catalog", action="store_true", default=False, help="Browse and import from the remote act-configs catalog (historicengland/act-configs).")
 
     # Sub-parser for the rehash command
     parser_rehash = subparsers.add_parser("rehash", help="Regenerate or set the hash used in Docker resource names", formatter_class=parser.formatter_class)
@@ -385,7 +387,56 @@ def main():
     # ========================================================================================================
     elif args.command == "import":
         AcOutputManager.write("▶️  Import project")
-        if args.project_name is None or args.project_name == "":
+        if args.catalog:
+            import shutil
+            tmpdir = None
+            try:
+                cache_dir = ac_workspace._get_ac_directory_path()
+                with AcOutputManager("Fetching available configs") as spinner:
+                    AcOutputManager.text(f"... Fetching available configs from {CATALOG_REPO}")
+                    try:
+                        catalog = fetch_remote_catalog(cache_dir)
+                    except RuntimeError as exc:
+                        AcOutputManager.fail(f"🔴 {exc}")
+                        exit(1)
+                if not catalog:
+                    AcOutputManager.fail("🔴 No configurations found in the remote catalog.")
+                    exit(1)
+                if args.project_name:
+                    match = next(
+                        (e for e in catalog if e["project_name"] == args.project_name),
+                        None,
+                    )
+                    if match is None:
+                        AcOutputManager.fail(
+                            f"🔴 Project '{args.project_name}' not found in the remote catalog."
+                        )
+                        exit(1)
+                else:
+                    choices = [e["display_name"] for e in catalog]
+                    selected = _interactive_project_select("Select a configuration to import:", choices)
+                    if selected is None:
+                        AcOutputManager.write("Selection cancelled.")
+                        exit(0)
+                    match = next(e for e in catalog if e["display_name"] == selected)
+                AcOutputManager.write(f"... Downloading config from remote...")
+                try:
+                    tmpdir, import_path = download_config_to_tempdir(match)
+                except RuntimeError as exc:
+                    AcOutputManager.fail(f"🔴 {exc}")
+                    exit(1)
+                prompt_default = True if args.yes else False if args.no else None
+                ac_workspace.import_project(
+                    match["project_name"],
+                    import_path,
+                    new_hash=args.new_hash,
+                    target_hash=args.hash_value,
+                    prompt_default=prompt_default,
+                )
+            finally:
+                if tmpdir is not None:
+                    shutil.rmtree(tmpdir, ignore_errors=True)
+        elif args.project_name is None or args.project_name == "":
             with AcOutputManager(f"... Discovering importable projects") as spinner:
                 AcOutputManager.text("... Discovering importable projects")
                 discovered = ac_workspace.discover_importable_projects()
@@ -402,16 +453,17 @@ def main():
             import_repo_path = match["repo_path"]
         else:
             import_repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
-        repo_path = args.repo_path if args.repo_path else import_repo_path
-        prompt_default = True if args.yes else False if args.no else None
-        AcOutputManager.write("... Importing project")
-        ac_workspace.import_project(
-            args.project_name,
-            repo_path,
-            new_hash=args.new_hash,
-            target_hash=args.hash_value,
-            prompt_default=prompt_default,
-        )
+        if not args.catalog:
+            repo_path = args.repo_path if args.repo_path else import_repo_path
+            prompt_default = True if args.yes else False if args.no else None
+            AcOutputManager.write("... Importing project")
+            ac_workspace.import_project(
+                args.project_name,
+                repo_path,
+                new_hash=args.new_hash,
+                target_hash=args.hash_value,
+                prompt_default=prompt_default,
+            )
 
     # ========================================================================================================
     elif args.command == "rehash":
