@@ -2,6 +2,7 @@ import argparse
 from rich_argparse import RichHelpFormatter
 import os
 import webbrowser
+from types import SimpleNamespace
 from slugify import slugify
 from arches_containers import AC_VERSION as arches_containers_version
 from arches_containers.manage import compose_project, initialize_project, status, shell_container, logs_container
@@ -10,6 +11,7 @@ from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject
 from arches_containers.utils.create_launch_config import generate_launch_config
 from arches_containers.utils.logger import AcOutputManager
 from arches_containers.utils.remote_catalog import fetch_remote_catalog, download_config_to_tempdir, CATALOG_REPO
+from arches_containers.utils.arches_catalog import fetch_arches_catalog_packages, get_compatible_template_versions
 
 
 def _interactive_project_select(message, choices):
@@ -162,7 +164,8 @@ def main():
     import_prompt_group = parser_import.add_mutually_exclusive_group()
     import_prompt_group.add_argument("--yes", action="store_true", help="Answer yes to import prompts for non-interactive use.")
     import_prompt_group.add_argument("--no", action="store_true", help="Answer no to import prompts for non-interactive use.")
-    parser_import.add_argument("--catalog", action="store_true", default=False, help="Browse and import from the remote act-configs catalog (historicengland/act-configs).")
+    parser_import.add_argument("--act-catalog", "-act", dest="act_catalog", action="store_true", default=False, help="Browse and import from the remote act-configs catalog (historicengland/act-configs).")
+    parser_import.add_argument("--arches-catalog", "-ac", dest="arches_catalog", action="store_true", default=False, help="Browse arches-catalog packages and create a compatible project config.")
 
     # Sub-parser for the rehash command
     parser_rehash = subparsers.add_parser("rehash", help="Regenerate or set the hash used in Docker resource names", formatter_class=parser.formatter_class)
@@ -387,7 +390,121 @@ def main():
     # ========================================================================================================
     elif args.command == "import":
         AcOutputManager.write("▶️  Import project")
-        if args.catalog:
+        if args.arches_catalog:
+            cache_dir = ac_workspace._get_ac_directory_path()
+            prompt_default = True if args.yes else False if args.no else None
+            with AcOutputManager("Fetching arches-catalog packages") as spinner:
+                AcOutputManager.text("... Fetching available applications and extensions")
+                try:
+                    catalog_packages = fetch_arches_catalog_packages(cache_dir=cache_dir)
+                except RuntimeError as exc:
+                    AcOutputManager.fail(f"🔴 {exc}")
+                    exit(1)
+
+            if not catalog_packages:
+                AcOutputManager.fail("🔴 No application or extension packages found in arches-catalog.")
+                exit(1)
+
+            if args.project_name:
+                package = next(
+                    (
+                        item for item in catalog_packages
+                        if item["project_name"] == args.project_name or item["name"] == args.project_name
+                    ),
+                    None,
+                )
+                if package is None:
+                    AcOutputManager.fail(
+                        f"🔴 Package '{args.project_name}' not found in arches-catalog applications/extensions."
+                    )
+                    exit(1)
+            else:
+                selected_package = _interactive_project_select(
+                    "Select an application or extension package:",
+                    [item["display_name"] for item in catalog_packages],
+                )
+                if selected_package is None:
+                    AcOutputManager.write("Selection cancelled.")
+                    exit(0)
+                package = next(item for item in catalog_packages if item["display_name"] == selected_package)
+
+            template_versions = ac_workspace.list_available_versions()
+            try:
+                compatible_templates = get_compatible_template_versions(
+                    package["arches_versions"],
+                    template_versions,
+                )
+            except RuntimeError as exc:
+                AcOutputManager.fail(f"🔴 {exc}")
+                exit(1)
+
+            if not compatible_templates:
+                AcOutputManager.fail(
+                    f"🔴 No compatible templates found for '{package['name']}' ({package['arches_versions']})."
+                )
+                exit(1)
+
+            compatible_display_names = []
+            for idx, template in enumerate(compatible_templates):
+                name = template["display_name"]
+                if idx == 0:
+                    name = f"{name} (recommended)"
+                compatible_display_names.append(name)
+
+            selected_template = _interactive_project_select(
+                "Select a compatible Arches template:",
+                compatible_display_names,
+            )
+            if selected_template is None:
+                AcOutputManager.write("Selection cancelled.")
+                exit(0)
+
+            selected_index = compatible_display_names.index(selected_template)
+            selected_version = compatible_templates[selected_index]["version"]
+
+            project_name = package["project_name"]
+            create_args = SimpleNamespace(
+                version=selected_version,
+                organization=None,
+                branch=None,
+                repo_name=None,
+            )
+
+            with AcOutputManager("Creating project config from template") as spinner:
+                AcOutputManager.write(
+                    f"... Creating project '{project_name}' from template Arches {selected_version}"
+                )
+                ac_workspace.create_project(project_name, create_args)
+
+            clone_repo = ac_workspace._confirm(
+                f"Clone package repository for '{package['name']}' now? (y/n): ",
+                prompt_default,
+            )
+            if clone_repo:
+                try:
+                    repo_dir_name = arches_repo_helper.derive_repo_directory_name(package["repository"])
+                except ValueError as exc:
+                    AcOutputManager.fail(f"🔴 {exc}")
+                    exit(1)
+
+                clone_path = os.path.join(ac_workspace.path, repo_dir_name)
+                if os.path.exists(clone_path):
+                    AcOutputManager.warn(
+                        f"Repository directory already exists at '{clone_path}'. Skipping clone."
+                    )
+                else:
+                    AcOutputManager.write(f"... Cloning {package['repository']} to {clone_path}")
+                    if not arches_repo_helper.clone_repository(package["repository"], clone_path):
+                        AcOutputManager.fail(
+                            f"🔴 Failed to clone repository {package['repository']} to {clone_path}"
+                        )
+                        exit(1)
+                    AcOutputManager.success(f"Repository cloned to {clone_path}")
+
+            AcOutputManager.success(
+                f"Project '{project_name}' is ready. Run 'act up -p {project_name}' to start it."
+            )
+        elif args.act_catalog:
             import shutil
             tmpdir = None
             try:
@@ -453,7 +570,7 @@ def main():
             import_repo_path = match["repo_path"]
         else:
             import_repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
-        if not args.catalog:
+        if not args.act_catalog and not args.arches_catalog:
             repo_path = args.repo_path if args.repo_path else import_repo_path
             prompt_default = True if args.yes else False if args.no else None
             AcOutputManager.write("... Importing project")

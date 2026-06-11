@@ -1,5 +1,7 @@
 import os
 import subprocess
+from urllib.parse import urlparse
+from slugify import slugify
 from arches_containers.utils.workspace import AcWorkspace, AcProjectAttributes
 from arches_containers.utils.logger import AcOutputManager
 
@@ -46,3 +48,27 @@ def change_arches_branch(project_name, verbose=False):
         AcOutputManager.write(f"Changed arches repo branch to {branch}")
 
     AcOutputManager.complete_step(f"Arches repo configured")
+
+
+def derive_repo_directory_name(repo_url):
+    parsed = urlparse(repo_url)
+    basename = os.path.basename(parsed.path)
+    if basename.endswith(".git"):
+        basename = basename[:-4]
+    name = slugify(text=basename, separator="-")
+    if not name:
+        raise ValueError(f"Cannot derive repository directory name from URL: {repo_url}")
+    return name
+
+
+def clone_repository(repo_url, clone_dir, verbose=False):
+    if os.path.exists(clone_dir):
+        return False
+
+    result = subprocess.run(
+        ["git", "clone", repo_url, clone_dir],
+        stdout=subprocess.PIPE if not verbose else None,
+        stderr=subprocess.PIPE if not verbose else None,
+    )
+
+    return result.returncode == 0

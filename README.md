@@ -288,6 +288,33 @@ act import [-p <project_name>] [-r <repo_path>] [--new-hash | --hash <abc12>] [-
 
 If neither `--new-hash` nor `--hash` is passed, the CLI prompts whether to generate a new hash. This helps avoid accidental collisions with another running environment using the same Docker resource names.
 
+### Import from arches-catalog
+
+You can also create a project config directly from package metadata in `https://github.com/archesproject/arches-catalog`.
+
+Run:
+
+```sh
+act import --arches-catalog
+```
+
+Or use the shorthand:
+
+```sh
+act import -ac
+```
+
+Flow:
+
+1. Lists `application` and `extension` packages from arches-catalog (including their supported Arches versions).
+2. Prompts you to select a compatible local template version, with the latest compatible option recommended.
+3. Creates the local `.arches_containers/<project>/` config using that template.
+4. Prompts to clone the selected package repository into the workspace.
+
+You can run non-interactively for clone confirmation with `--yes` or `--no`.
+
+> Note: The existing `act import --act-catalog` flow remains available for importing prebuilt configs from `HistoricEngland/act-configs`.
+
 **example:**
 
 Given the following directory structure:
