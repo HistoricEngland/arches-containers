@@ -101,8 +101,12 @@ create_arches_project_only(){
 	echo ""
 	if ! project_exists; then
 		cd ${WEB_ROOT}
-		mkdir -p ${ARCHES_PROJECT_REPO_DIRECTORY}
-		python3 ${WEB_ROOT}/arches/arches/install/arches_admin.py startproject ${ARCHES_PROJECT} -d ${ARCHES_PROJECT_REPO_DIRECTORY}
+		if [[ ${ARCHES_PROJECT} != ${ARCHES_PROJECT_REPO_DIRECTORY} ]]; then
+			mkdir -p ${ARCHES_PROJECT_REPO_DIRECTORY}
+			python3 ${WEB_ROOT}/arches/arches/install/arches_admin.py startproject ${ARCHES_PROJECT} -d ${ARCHES_PROJECT_REPO_DIRECTORY}
+		else
+			python3 ${WEB_ROOT}/arches/arches/install/arches_admin.py startproject ${ARCHES_PROJECT}
+		fi
 		echo "...Checking directories are created..."
 		sleep 2
 		if ! project_exists; then
