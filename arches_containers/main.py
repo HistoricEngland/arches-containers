@@ -4,7 +4,7 @@ import os
 import webbrowser
 from slugify import slugify
 from arches_containers import AC_VERSION as arches_containers_version
-from arches_containers.manage import compose_project, initialize_project, status, shell_container, logs_container
+from arches_containers.manage import compose_project, initialize_project, status, shell_container, logs_container, check_command
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject, AcProjectAttributes, _is_version_supported
 from arches_containers.utils.create_launch_config import generate_launch_config
@@ -171,6 +171,15 @@ def main():
 
     # Sub-parser for the status command
     parser_status = subparsers.add_parser("status", help="Check container status", formatter_class=parser.formatter_class)
+
+    # Sub-parser for the check command
+    parser_check = subparsers.add_parser("check", help="Run system readiness checks before running projects", formatter_class=parser.formatter_class)
+    check_group = parser_check.add_mutually_exclusive_group()
+    check_group.add_argument("--dependencies", action="store_true", help="Check system dependencies (git, docker, docker-compose, disk space, ports)")
+    check_group.add_argument("--workspace", action="store_true", help="Check workspace configuration and integrity")
+    check_group.add_argument("--configuration", action="store_true", help="Check project configuration")
+    parser_check.add_argument("-p", "--project", default=None, help="Only check a specific project (use with --configuration)")
+    parser_check.add_argument("-v", "--verbose", action="store_true", help="Show verbose output for debugging")
 
     # Sub-parser for the shell command
     parser_shell = subparsers.add_parser("shell", help="Open an interactive shell in a project container", formatter_class=parser.formatter_class)
@@ -484,6 +493,16 @@ def main():
         with AcOutputManager("Checking active project container status") as spinner:
             AcOutputManager.write("▶️  Checking active project container status")
             status()
+
+    # ========================================================================================================
+    elif args.command == "check":
+        check_command(
+            dependencies=args.dependencies,
+            workspace=args.workspace,
+            configuration=args.configuration,
+            project=args.project,
+            verbose=args.verbose
+        )
 
     # ========================================================================================================
     elif args.command == "shell":

@@ -234,6 +234,130 @@ cd /path/to/workspace
 act generate-debug-config
 ```
 
+### Check System Readiness
+
+Before running your projects, use the `check` command to validate that your system is properly configured and ready. This command performs a comprehensive pre-flight check that helps identify and resolve common setup issues.
+
+The check command validates three areas:
+
+1. **Dependencies**: Verifies that required tools are installed and configured
+   - Git
+   - Docker and Docker daemon
+   - Docker Compose
+   - Disk space (warns if < 5GB available)
+
+2. **Workspace**: Ensures your workspace is properly configured
+   - Detects all `.arches-containers` directories in the path
+   - Identifies the active workspace
+   - Warns if multiple workspaces exist or if a hidden workspace in your home directory is active
+
+3. **Configuration**: Validates project configurations
+    - Checks for required configuration fields
+    - Detects missing or mismatched repository directories
+    - Checks port availability based on project `config.json` values and docker compose mappings
+    - Validates project hashes and Arches versions
+    - Warns about old Arches versions (< 7.6)
+
+#### Run All Checks
+
+Run all three checks together (default behavior):
+
+```sh
+cd /path/to/workspace
+act check
+```
+
+#### Run Specific Checks
+
+Check only dependencies:
+
+```sh
+act check --dependencies
+```
+
+Check only workspace:
+
+```sh
+act check --workspace
+```
+
+Check only project configuration:
+
+```sh
+act check --configuration
+```
+
+Check a specific project's configuration:
+
+```sh
+act check --configuration --project <project_name>
+```
+
+#### Output and Exit Codes
+
+The check command provides detailed feedback:
+
+- ✅ **Green checkmark** = Check passed
+- ⚠️ **Warning symbol** = Warning (e.g., old version, unused ports)
+- ❌ **Red X** = Critical issue requiring attention
+
+Exit codes:
+
+- `0` = All checks passed
+- `1` = Critical issues found (dependencies or configuration missing/misconfigured)
+- `2` = Warnings found (old versions, multiple workspaces, etc.)
+
+You can use exit codes in scripts for conditional logic:
+
+```sh
+act check
+if [ $? -eq 0 ]; then
+  act up
+else
+  echo "Please fix the issues reported by 'act check' before running 'act up'"
+fi
+```
+
+#### Troubleshooting Common Issues
+
+**Docker not installed or daemon not running**
+
+The check will suggest visiting https://www.docker.com/products/docker-desktop and installing Docker Desktop for your OS.
+
+**Port already in use**
+
+If ports 8000, 8001, or 8002 are already in use, the check will report this. Either:
+- Stop the service using that port: `lsof -i :PORT` to find the process
+- Configure your project to use different ports
+
+**Multiple workspaces detected**
+
+If you have `.arches-containers` folders in multiple locations (e.g., home directory and project directory), the check will warn you. The active workspace is the one closest to your current directory. To consolidate:
+- Delete unnecessary `.arches-containers` folders: `rm -rf ~/.arches_containers` (if it's a stray workspace)
+- Or move projects to a single workspace
+
+**Old Arches version**
+
+If your project uses Arches < 7.6, the check will warn you. Consider:
+- Creating a new project with a supported version: `act create`
+- Upgrading your Arches installation
+
+**Repository directory not found**
+
+The configuration check validates that your project's repository directory exists in the workspace. For backward compatibility with older projects:
+
+- **Older projects** (configs without `project_repo_directory` field): The check looks for a folder matching the `project_name`, including hyphen/underscore variants (e.g., `my_project` will match `my-project`)
+- **Newer projects** (configs with explicit `project_repo_directory`): The check looks for the exact directory specified in the config
+
+If you see warnings about repository directory naming:
+- The check found your repo folder but it doesn't match the config's expected name
+- **Option 1** (Recommended): Rename your repo folder to match the config expectation: `mv old-name expected-name`
+- **Option 2**: Update your config to match the current repo folder name by editing `.arches_containers/<project_name>/config.json` and changing the `project_repo_directory` value
+
+If the check fails because the repository isn't found:
+- Clone the repository to your workspace: `git clone <repo-url> <expected-directory-name>`
+- Or recreate the project from source: `act delete <project_name>` and then `act up --app <project_name>`
+
 ### Export a Project
 
 The user can export an arches-container project to a repository folder. This is useful when the user wants to share the project with others or store it in a version control system. The export command will create a folder called `.ac_<project_name>` in the repository folder and copy the necessary files to it.
