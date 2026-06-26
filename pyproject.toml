@@ -35,7 +35,7 @@ dependencies = [
     "prettytable==3.16.0",
     "prompt_toolkit>=3.0.0",
     "rich-argparse==1.7.2",
-    "pre-commit==4.3.0",
+    "pre-commit==4.6.0",
 ]
 
 [project.optional-dependencies]
