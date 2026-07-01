@@ -45,7 +45,7 @@ Use the `arches-containers` or shorthand `act` command to manage arches-containe
 
 The following examples use the `act` command. Replace `act` with `arches-containers` if you prefer to use the full command.
 
-> ⚠️ **arches-containers** will create a `.arches-containers` folder in the workspace directory to store project configurations. It will look for this up the file tree when running commands. Should there be another `.arches-containers` folder in the workspace directory, the CLI may not work as expected.
+> ⚠️ **arches-containers** will create a `.arches_containers` folder in the workspace directory to store project configurations. It will look for this up the file tree when running commands. Should there be another `.arches_containers` folder in the workspace directory, the CLI may not work as expected.
 
 ```sh
 cd /path/to/workspace
@@ -244,19 +244,21 @@ The check command validates three areas:
    - Git
    - Docker and Docker daemon
    - Docker Compose
-   - Disk space (warns if < 5GB available)
+    - Disk space (warns if < 5GB available)
 
 2. **Workspace**: Ensures your workspace is properly configured
-   - Detects all `.arches-containers` directories in the path
-   - Identifies the active workspace
-   - Warns if multiple workspaces exist or if a hidden workspace in your home directory is active
+    - Detects all `.arches_containers` workspaces from the current directory up to your home directory
+    - Identifies the active workspace and labels discovered workspaces in the output
+    - Warns if multiple workspaces exist
+    - Warns if the active workspace is outside the current directory path
 
 3. **Configuration**: Validates project configurations
-    - Checks for required configuration fields
-    - Detects missing or mismatched repository directories
-    - Checks port availability based on project `config.json` values and docker compose mappings
-    - Validates project hashes and Arches versions
-    - Warns about old Arches versions (< 7.6)
+   - Ensures each project's `config.json` exists
+   - Detects missing or mismatched repository directories (including backward-compatible checks)
+   - Fails when `config.json` `project_name` does not match the workspace project key
+   - Checks host port availability using both `config.json` port values and `.arches_containers/<project>/docker-compose*.yml` mappings
+   - Warns about invalid project hash format
+   - Warns about old Arches versions (< 7.6)
 
 #### Run All Checks
 
@@ -293,19 +295,32 @@ Check a specific project's configuration:
 act check --configuration --project <project_name>
 ```
 
+Short form:
+
+```sh
+act check --configuration -p <project_name>
+```
+
 #### Output and Exit Codes
 
 The check command provides detailed feedback:
 
 - ✅ **Green checkmark** = Check passed
-- ⚠️ **Warning symbol** = Warning (e.g., old version, unused ports)
+- ⚠️ **Warning symbol** = Warning (e.g., old version, port in use)
 - ❌ **Red X** = Critical issue requiring attention
+
+Configuration details include explicit finding tags:
+
+- `[FAIL]` for failures
+- `[WARN]` for warnings
+
+When failures are present, remediation is shown for failed checks only.
 
 Exit codes:
 
 - `0` = All checks passed
-- `1` = Critical issues found (dependencies or configuration missing/misconfigured)
-- `2` = Warnings found (old versions, multiple workspaces, etc.)
+- `1` = One or more checks failed
+- `2` = No failures, but one or more checks returned warnings
 
 You can use exit codes in scripts for conditional logic:
 
@@ -332,8 +347,8 @@ If ports 8000, 8001, or 8002 are already in use, the check will report this. Eit
 
 **Multiple workspaces detected**
 
-If you have `.arches-containers` folders in multiple locations (e.g., home directory and project directory), the check will warn you. The active workspace is the one closest to your current directory. To consolidate:
-- Delete unnecessary `.arches-containers` folders: `rm -rf ~/.arches_containers` (if it's a stray workspace)
+If you have `.arches_containers` folders in multiple locations (e.g., home directory and project directory), the check will warn you. The active workspace is the one closest to your current directory. To consolidate:
+- Delete unnecessary `.arches_containers` folders: `rm -rf ~/.arches_containers` (if it's a stray workspace)
 - Or move projects to a single workspace
 
 **Old Arches version**
