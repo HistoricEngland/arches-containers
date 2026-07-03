@@ -1,6 +1,8 @@
 import os, sys
 import subprocess
 from time import sleep, time
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen
 from arches_containers.utils.workspace import AcWorkspace, AcSettings, AcProject
 import arches_containers.utils.arches_repo_helper as arches_repo_helper
 from arches_containers.utils.logger import AcOutputManager
@@ -19,13 +21,15 @@ def test_project_service_available_with_status_200(project_name) -> bool:
     host = ac_settings["host"]
     port = ac_settings["port"]
     url = f"http://{host}:{port}/"
-    result = subprocess.run(
-        ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url],
-        stdout=subprocess.PIPE,
-        text=True,
-        stderr=subprocess.DEVNULL,
-    )
-    return result.returncode == 0 and result.stdout.strip() == "200"
+    try:
+        with urlopen(url, timeout=5) as response:
+            return response.status == 200
+    except HTTPError:
+        return False
+    except URLError:
+        return False
+    except Exception:
+        return False
 
 def _image_build_needed(compose_file_path, project_path):
     '''
@@ -83,7 +87,7 @@ def compose_project(project_name, action="up", build=False, verbose=False, conta
     
     for compose_file in compose_files:
         if compose_file == DOCKER_COMPOSE_FILE and action == "up":
-            subprocess.run(["sleep", "15"])
+            sleep(15)
 
         compose_file_path = os.path.join(project_path, compose_file)
 

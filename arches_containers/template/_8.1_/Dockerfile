@@ -114,3 +114,11 @@ COPY ${PROJ_REPO_NAME}/ ${WEB_ROOT}/${PROJ_NAME}/
 
 # Install the project as an editable package so Django can import it
 RUN pip install -e ${WEB_ROOT}/${PROJ_NAME}
+
+# By default we resintall arches from ARCHES_ROOT to allow debug and development of Arches.
+# If you comment this out, you'll install what meets the version requirements of the project package.
+WORKDIR ${ARCHES_ROOT}
+RUN pip install -e '.[dev]'
+
+# Set default workdir
+WORKDIR ${WEB_ROOT}
