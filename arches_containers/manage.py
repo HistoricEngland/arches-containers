@@ -298,3 +298,87 @@ def main(project_name=None, action="up", build=False, verbose=False):
     else:
         arches_repo_helper.change_arches_branch(project_name)
         compose_project(project_name, action, build, verbose)
+
+def check_command(dependencies=False, workspace=False, configuration=False, project=None, verbose=False):
+    """
+    Run system readiness checks before running arches-containers.
+    
+    If no specific check flags are provided, run all checks.
+    
+    Args:
+        dependencies: Check system dependencies
+        workspace: Check workspace integrity
+        configuration: Check project configuration
+        project: Specific project to check (only with --configuration)
+        verbose: Show verbose output
+    """
+    from arches_containers.utils.checks import DependenciesCheck, WorkspaceCheck, ConfigurationCheck, AggregatedCheckResult, CheckStatus
+    
+    # If no specific checks requested, run all
+    run_all = not (dependencies or workspace or configuration)
+    
+    all_results = []
+    
+    # Run dependencies check
+    if dependencies or run_all:
+        with AcOutputManager("Checking dependencies") as spinner:
+            AcOutputManager.write("▶️  Checking system dependencies...")
+            check = DependenciesCheck(verbose=verbose)
+            result = check.run()
+            all_results.append(result)
+            AcOutputManager.write("")
+            _print_check_result(result)
+            AcOutputManager.write("")
+    
+    # Run workspace check
+    if workspace or run_all:
+        with AcOutputManager("Checking workspace") as spinner:
+            AcOutputManager.write("▶️  Checking workspace...")
+            check = WorkspaceCheck(verbose=verbose)
+            result = check.run()
+            all_results.append(result)
+            AcOutputManager.write("")
+            _print_check_result(result)
+    
+    # Run configuration check
+    if configuration or run_all:
+        with AcOutputManager("Checking configuration") as spinner:
+            AcOutputManager.write("▶️  Checking project configuration...")
+            check = ConfigurationCheck(project_name=project, verbose=verbose)
+            result = check.run()
+            all_results.append(result)
+            AcOutputManager.write("")
+            _print_check_result(result)
+    
+    # Print summary
+    AcOutputManager.write("")
+    AcOutputManager.write("=" * 60)
+    aggregated = AggregatedCheckResult(all_results)
+    summary = aggregated.summary()
+    AcOutputManager.write(summary)
+    
+    # Exit with appropriate code
+    exit_code = aggregated.exit_code()
+    if exit_code != 0:
+        exit(exit_code)
+
+
+def _print_check_result(result):
+    """
+    Print a check result in a readable format.
+    
+    Args:
+        result: CheckResult object
+    """
+    # Print title and message
+    AcOutputManager.write(f"  {result.title}")
+    AcOutputManager.write(f"  {result.message}")
+    
+    # Print details if present
+    if result.details:
+        for detail in result.details:
+            AcOutputManager.write(f"    {detail}")
+    
+    # Print remediation if present
+    if result.remediation:
+        AcOutputManager.write(result.remediation)
