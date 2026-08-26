@@ -1,7 +1,7 @@
 import os
 import pytest
 from unittest.mock import patch, MagicMock
-from arches_containers.utils.arches_repo_helper import _get_repo_info
+from arches_containers.utils.arches_repo_helper import _get_repo_info, derive_repo_directory_name, clone_repository
 
 @pytest.fixture
 def mock_workspace():
@@ -61,3 +61,29 @@ class TestArchesRepoHelper(unittest.TestCase):
 
 if __name__ == '__main__': 
     unittest.main()
+
+
+def test_derive_repo_directory_name_handles_git_suffix():
+    assert derive_repo_directory_name("https://github.com/archesproject/arches-lingo.git") == "arches-lingo"
+
+
+def test_clone_repository_returns_false_if_target_exists(tmp_path):
+    existing = tmp_path / "existing-repo"
+    existing.mkdir()
+
+    result = clone_repository("https://github.com/archesproject/arches-lingo.git", str(existing))
+
+    assert result is False
+
+
+def test_clone_repository_returns_true_on_success(tmp_path):
+    target = tmp_path / "new-repo"
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value.returncode = 0
+
+        result = clone_repository(
+            "https://github.com/archesproject/arches-lingo.git",
+            str(target),
+        )
+
+    assert result is True

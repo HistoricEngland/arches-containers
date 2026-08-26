@@ -36,6 +36,8 @@ dependencies = [
     "prompt_toolkit>=3.0.0",
     "rich-argparse==1.7.2",
     "pre-commit==4.3.0",
+    "packaging>=24.0",
+    "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
