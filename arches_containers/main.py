@@ -1,4 +1,5 @@
 import argparse
+from difflib import get_close_matches
 from rich_argparse import RichHelpFormatter
 import os
 import webbrowser
@@ -153,7 +154,7 @@ def main():
 
     # Sub-parser for the import command
     parser_import = subparsers.add_parser("import", help="Import a project from a given repository folder", formatter_class=parser.formatter_class)
-    parser_import.add_argument("-p", "--project_name", required=False, default=None, help="The name of the project to import. If omitted, importable projects are discovered interactively.")
+    parser_import.add_argument("-p", "--project_name", required=False, default=None, help="The project name or its hyphenated equivalent. Without --repo_path, a unique repository folder name is also accepted. If omitted, importable projects are discovered interactively.")
     parser_import.add_argument("-r", "--repo_path", help="The path to the repository folder if different to the default.")
     import_hash_group = parser_import.add_mutually_exclusive_group()
     import_hash_group.add_argument("--new-hash", action="store_true", default=None, help="Generate a new hash after import.")
@@ -385,6 +386,7 @@ def main():
     # ========================================================================================================
     elif args.command == "import":
         AcOutputManager.write("▶️  Import project")
+        requested_project_name = args.project_name
         if args.project_name is None or args.project_name == "":
             with AcOutputManager(f"... Discovering importable projects") as spinner:
                 AcOutputManager.text("... Discovering importable projects")
@@ -400,9 +402,71 @@ def main():
             match = next(d for d in discovered if d["display_name"] == selected)
             args.project_name = match["project_name"]
             import_repo_path = match["repo_path"]
+        elif args.repo_path:
+            import_repo_path = args.repo_path
+            if not os.path.isdir(os.path.join(import_repo_path, f".ac_{args.project_name}")):
+                args.project_name = slugify(args.project_name, separator="_")
         else:
-            import_repo_path = args.repo_path if args.repo_path else os.path.join(ac_workspace.path, args.project_name)
+            with AcOutputManager("... Discovering importable projects") as spinner:
+                AcOutputManager.text("... Discovering importable projects")
+                discovered = ac_workspace.discover_importable_projects()
+            matches = [
+                project for project in discovered
+                if project["project_name"] == args.project_name
+            ]
+            if not matches:
+                normalized_name = slugify(args.project_name, separator="_")
+                matches = [
+                    project for project in discovered
+                    if project["project_name"] == normalized_name
+                ]
+            if not matches:
+                matches = [
+                    project for project in discovered
+                    if os.path.basename(project["repo_path"]) == args.project_name
+                ]
+            if len(matches) > 1:
+                repo_paths = "\n".join(
+                    f"    {project['project_name']}\n      {project['repo_path']}" for project in matches
+                )
+                AcOutputManager.fail(
+                    f"Multiple importable projects named '{args.project_name}' found.\n\n"
+                    f"  Matching exports:\n{repo_paths}\n\n"
+                    "  Select a project and repository:\n"
+                    "    act import -p <project_name> --repo_path <path>"
+                )
+                exit(1)
+            if matches:
+                args.project_name = matches[0]["project_name"]
+                import_repo_path = matches[0]["repo_path"]
+            else:
+                import_repo_path = os.path.join(ac_workspace.path, args.project_name)
+                config_path = os.path.join(import_repo_path, f".ac_{args.project_name}", "config.json")
+                if not os.path.isfile(config_path):
+                    names = sorted({project["project_name"] for project in discovered})
+                    suggestions = get_close_matches(normalized_name, names)
+                    hint = ""
+                    if suggestions:
+                        hint = "\n\n  Did you mean?\n" + "\n".join(
+                            f"    act import -p {name}" for name in suggestions
+                        )
+                    AcOutputManager.fail(
+                        f"No exported config matches '{requested_project_name}' as a project or repository name.\n\n"
+                        "  Expected export:\n"
+                        "    .ac_<project_name>/config.json\n\n"
+                        f"  Checked path:\n    {config_path}"
+                        f"{hint}\n\n"
+                        "  Select from available projects:\n"
+                        "    act import\n\n"
+                        "  Or specify the project and repository:\n"
+                        "    act import -p <project_name> --repo_path <path>"
+                    )
+                    exit(1)
         repo_path = args.repo_path if args.repo_path else import_repo_path
+        if requested_project_name and requested_project_name != args.project_name:
+            AcOutputManager.write(
+                f"Resolved '{requested_project_name}' to project '{args.project_name}' in '{repo_path}'."
+            )
         prompt_default = True if args.yes else False if args.no else None
         AcOutputManager.write("... Importing project")
         ac_workspace.import_project(
