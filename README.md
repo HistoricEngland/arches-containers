@@ -279,12 +279,18 @@ Or pass arguments directly:
 act import [-p <project_name>] [-r <repo_path>] [--new-hash | --hash <abc12>] [--yes|--no]
 ```
 
-- `-p`, `--project_name`: The name of the project to import. If omitted, importable projects are discovered interactively.
-- `-r`, `--repo_path`: The path to the repository folder if different to the default.
+- `-p`, `--project_name`: The project name or its hyphenated equivalent. Without `--repo_path`, a unique repository folder name is also accepted. If omitted, importable projects are discovered interactively.
+- `-r`, `--repo_path`: Explicitly select the repository folder, bypassing discovery when `-p` is also provided.
 - `--new-hash`: Generate a new hash for the imported project.
 - `--hash`: Set an explicit 5-character lowercase hexadecimal hash for the imported project.
 - `--yes`: Answer yes to all import prompts (non-interactive mode).
 - `--no`: Answer no to all import prompts (non-interactive mode).
+
+The repository folder does not need to match the project name. For example, `act import -p my_project` can discover `my-project/.ac_my_project/config.json`, including in nested folders. If multiple repositories export the same project name, pass `--repo_path` to select one. Timestamped export backups are excluded from discovery.
+
+Named imports try the exact project name first, then its snake-case equivalent, then the actual repository folder name. For example, `act import -p mariner-proj` resolves to the project in `mariner-proj/.ac_mariner_proj/config.json` and imports it as `mariner_proj`. The resolved name and path are shown before importing. Resolution uses exported configs and filesystem paths, so older configs do not need a `project_repo_directory` attribute.
+
+If a value matches multiple exports, the CLI lists their project names and paths and requires an explicit project name and `--repo_path`. If no matching config is found, it reports the problem and suggests similar project names where available. Suggestions are never imported automatically, even with `--yes`.
 
 If neither `--new-hash` nor `--hash` is passed, the CLI prompts whether to generate a new hash. This helps avoid accidental collisions with another running environment using the same Docker resource names.
 

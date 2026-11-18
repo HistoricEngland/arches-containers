@@ -543,7 +543,7 @@ class AcWorkspace:
                     with open(config_path, "r", encoding="utf-8") as f:
                         config = json.load(f)
                     project_name = config.get("project_name", "")
-                    if project_name:
+                    if project_name and entry.name == f".ac_{project_name}":
                         rel = os.path.relpath(dirpath, search_root)
                         found.append({"project_name": project_name, "repo_path": dirpath, "_rel": rel})
                 except (OSError, ValueError):
